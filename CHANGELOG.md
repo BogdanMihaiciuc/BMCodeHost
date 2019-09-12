@@ -23,7 +23,7 @@ CodeHost will now retain its window's size, position and the size of the sidebar
 
 On macOS Mojave, the code editor will take on a black appearance if the system appearance setting is set to dark mode.
 
-CodeHost now uses a gradle build script for minifying and packaging - release builds are now minified and optimized.
+CodeHost now uses a gulp build script for minifying and packaging - release builds are now minified and optimized.
 
 # 2.0.1
 

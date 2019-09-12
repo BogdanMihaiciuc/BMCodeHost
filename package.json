@@ -11,7 +11,7 @@
     "minimumThingWorxVersion": "6.0.0",
     "homepage": "https://github.com/ptc-iot-sharing/BMCodeHost",
     "autoUpdate": {
-        "gitHubURL": "//api.github.com/repos/ptc-iot-sharing/BMCodeHost/releases/latest"
+        "gitHubURL": "https://api.github.com/repos/ptc-iot-sharing/BMCodeHost/releases/latest"
     },
     "repository": {
         "type": "git",
