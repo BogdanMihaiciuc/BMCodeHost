@@ -33,6 +33,8 @@ To create a new property, event or service, click the **+** button next to the a
 Whenever you create a property, event or service in here, the widget itself will gain that property and it can be used to bind to or from other widgets and services in the mashup.
 Note that properties are always both binding sources and binding targets.
 
+To remove a previously created property, event or service, drag it outside of the properties panel.
+
 ![Property Creation](readme/propertyCreation.png)
 
 ### Working with properties
