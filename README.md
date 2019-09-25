@@ -2,7 +2,97 @@
 
 Requires [CoreUI](https://github.com/ptc-iot-sharing/BMCoreUI) and [monacoScriptEditor](https://github.com/ptc-iot-sharing/MonacoEditorTWX).
 
-This extension allows developers to customize their mashups using custom CSS, Javascript or Typescript code.
+This extension allows developers to customize their mashups using custom CSS, Javascript or TypeScript code.
+
+![Code Editor](readme/preview.png)
+
+Although Thingworx contains two built-in Expression and Validator widgets that can be used by developers to write custom logic in Javascript, those widgets are extremely limited because the code typing area is quite small and many often used keywords are blocked. This makes those widgets inappropriate for anything beyond simple calculations or validations.
+
+Instead, the `BMCodeHost` extension aims to make Javascript logic (and TypeScript) a first class citizen in Thingworx mashups. Beyond just providing a method to write custom Javascript code in the composer and execute it at runtime, it makes it very easy to actually integrate that code with the rest of the mashup environment by exposing easy to use properties, events and services.
+
+## Basic Usage
+
+To start adding custom logic to your mashup, add one of the two widgets to your mashup:
+ - `Object`: Allows you to write logic in Javascript
+ - `TypeScript Object`: Allows you to write logic in TypeScript
+
+When you do so, the newly added widget will look like in the screenshot below; Click on the name of the object to open the editor.
+
+![Appearance](readme/widgets.png)
+
+The editor will provide a large area in which code can be written. Normally, this code is evaluated immediately after the object is created at runtime. You will notice that unlike the Expression, there is no `Evaluate` service to invoke and no `Output` to configure.
+
+For the `Stylesheet` widget, the CSS that you type will be added to the document stylesheets as soon as the widget is loaded at runtime. Note that those stylesheets will be removed when the mashup containing it is unloaded. If you want your CSS to be retained, consider placing the `Stylesheet` widget in your mashup's master.
+
+## Interacting with the Mashup
+
+To interact with the Mashup and other widgets, the `Object` and `TypeScript Object` widgets allow you define custom properties, services and events. When the editor is open for one of those widgets, it will containg a properties panel on the right hand side that shows the currently defined properties, events and services, allows you to manage them and allows you to create new ones.
+
+To create a new property, event or service, click the **+** button next to the appropriate header. A new row will be added for the new property where you will have to fill in the name. For properties, you may also change the base type as needed. 
+
+Whenever you create a property, event or service in here, the widget itself will gain that property and it can be used to bind to or from other widgets and services in the mashup.
+Note that properties are always both binding sources and binding targets.
+
+![Property Creation](readme/propertyCreation.png)
+
+### Working with properties
+
+To access or set a property, use either the `self` or `this` keyword:
+```js
+// Writes the value of the "myProperty" property to the browser console
+console.log(self.myProperty); 
+
+// Updates the value of the "myProperty" property. 
+// This will also update any bindings created for this property.
+self.myProperty = "test"; 
+```
+
+### Working with services
+
+Services are really just regular Javascript functions that take no parameters but can be invoked via bindings from other widgets. After you define a service in the properties panel, you will also need to implement it in your code. You can also invoke services from within your own code just like regular methods as well.
+
+Suppose you define a service called `myService`; you will need to implement it as a property on `self` or `this`:
+```js
+
+// Implementation of the "myService" service.
+// This service just shows an alert with the value of "myProperty".
+self.myService = function () {
+    alert(self.myProperty);
+}
+
+// Invoked the "myService" service.
+self.myService();
+
+```
+
+### Working with events
+
+Events can be triggered and bound to execute other services either defined on other widgets or services that run on the Thingworx server. After an event has been defined in the properties panel, you can trigger it from your code by using the `dispatchEvent` method on `self` or `this`:
+```js
+// Triggers the "myEvent" event
+self.dispatchEvent("myEvent")
+```
+
+### Working with other widgets
+
+A key feature of Code Host is that it makes it easy to also directly reference other widgets on the mashup and invoke their methods. A `$w` function is available for use in your code that can retrieve a reference to another widget. Widgets are looked up based on their `DisplayName` property.
+
+For example, if you have a **TextBox** widget with the `"MyTextBox"` value for the DisplayName property, you can use it like in the example below:
+```js
+// Retrieve a reference to the "MyTextBox" widget.
+const myTextBox = $w("MyTextBox");
+
+// Invoke its setProperty method, setting its "Text" property to the value of "myProperty".
+myTextBox.setProperty("Text", self.myProperty);
+```
+
+Note that the code is evaluated as soon as the object is created, so using `$w` outside of a function can fail because the referenced widget has not yet been created. To avoid this, consider moving initialization code in a service that is invoked via the `MashupLaoded` event.
+
+## Global vs Local scope
+
+The `Object` and `TypeScript Object` widgets have a property called `Scope` that can be set to either `"Global"` or `"Local"`. By default, all newly created objects are set to local mode, where their code executes within the mashup scope and has access to properties, events and services, but any variables or functions that you define will not be directly visible outside of that script.
+
+It is possible to set this Scope to Global instead, which will cause the script to run in the global scope. In global scope, you will not be able to define any properties, events and services, the `$w` function will not be available to retrieve reference to widgets, but any classes, variables and functions that you define will be available globally for other scripts as well. Note that these global scripts still need to be evaluated in order for their definitions to be available elsewhere, so if an object contains a definition that you want available right away consider moving it into a mashup that loads early, such as a master.
 
 # Index
 
