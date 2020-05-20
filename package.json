@@ -19,7 +19,8 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "gulp",
+        "build": "gulp --p",
+        "buildDebug": "gulp",
         "buildProduction": "gulp --p",
         "upload": "gulp upload",
         "uploadProduction": "gulp upload --p"
