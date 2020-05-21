@@ -1,3 +1,7 @@
+🛑 **Note: If you are planning to use this widget in Thingworx 8.5 or newer, strongly consider using [Core UI Widgets](https://github.com/ptc-iot-sharing/BMCoreUIWidgets) instead.** You may also use this + core ui if you have older projects where you were using core ui symbols from a globally scoped script which is no longer supported in core ui widgets.
+
+This repository contains the standalone development version of the `BMCodeHost` widget and is the source from which the widget is merged into core ui widgets.
+
 # Introduction
 
 Requires [CoreUI](https://github.com/ptc-iot-sharing/BMCoreUI) and [monacoScriptEditor](https://github.com/ptc-iot-sharing/MonacoEditorTWX).
