@@ -1,3 +1,7 @@
+# 2.6
+
+Improved compatibility with Core UI 2.6.
+
 # 2.5
 
 The `$w` function now takes a generic type parameter that will coerce its return value to that type. Note that this will not perform any runtime check of the returned widget. It is still the responsiblity of the developer to ensure that the correct widget type will be returned.
