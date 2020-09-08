@@ -1440,7 +1440,8 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			}
 		});
 		
-		
+		codeWindow.anchorNode = self.jqElement[0];
+
 		codeWindow.bringToFrontAnimated(animated === undefined ? YES : animated, {fromNode: self.jqElement[0], completionHandler: function () {
 				
 			if (window.monaco) {
