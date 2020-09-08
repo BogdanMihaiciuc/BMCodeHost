@@ -115,7 +115,14 @@ async function BMCodeHostLoadRootLibrariesWithCompletionHandler(handler) {
 	let jQueryResponse = await fetch('/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/jquery.d.ts', {credentials: 'include'});
 	BMCHRootjQueryLibrary = await jQueryResponse.text();
 
-	let coreUIResponse = await fetch('/Thingworx/Common/extensions/BMCoreUI/ui/BMCoreUI/BMCoreUI.d.ts', {credentials: 'include'});
+	// In Core UI widgets, this will be corrected to the common path
+	let coreUIPath = '/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/BMCoreUI.d.ts';
+	// But if this is running as a separate widget, core ui should be imported from the core ui extension
+	if (coreUIPath.includes('BMCodeHost')) {
+		coreUIPath = '/Thingworx/Common/extensions/BMCoreUI/ui/BMCoreUI/BMCoreUI.d.ts';
+	}
+
+	let coreUIResponse = await fetch(coreUIPath, {credentials: 'include'});
 	BMCHCoreUILibrary = await coreUIResponse.text();
 
 	let TWXResponse = await fetch('/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/Thingworx.d.ts', {credentials: 'include'});
