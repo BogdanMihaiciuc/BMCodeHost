@@ -356,7 +356,10 @@
     position: absolute;
 
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+	-webkit-overflow-scrolling: touch;
+	
+	/* This is normally a default, but Thingworx 9 overrides it */
+	box-sizing: content-box;
 }
 
 .BMCHNavigationSidebarCompatibility {
@@ -388,6 +391,9 @@
 
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+	
+	/* This is normally a default, but Thingworx 9 overrides it */
+	box-sizing: content-box;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,3 +1,7 @@
+# 2.6.2
+
+Resolves an issue that caused scrollbars to appear in Thingworx 9.
+
 # 2.6
 
 Improved compatibility with Core UI 2.6.
