@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><Entities>
   <ExtensionPackages>
-    <ExtensionPackage name="BMCodeHost" packageVersion="2.6.2" description="Allows arbitrary JavaScript, TypeScript and CSS to be added to a mash-up. Requires BMCoreUI." vendor="ThingWorx Customer Service" minimumThingWorxVersion="6.0.0" buildNumber="{&quot;giteaURL&quot;: &quot;http://roicentersvn.ptcnet.ptc.com/api/v1/repos/BogdanMihaiciuc/BMCodeHost/releases/latest&quot;}"/>
+    <ExtensionPackage name="BMCodeHost" packageVersion="2.6.3" description="Allows arbitrary JavaScript, TypeScript and CSS to be added to a mash-up. Requires BMCoreUI." vendor="ThingWorx Customer Service" minimumThingWorxVersion="6.0.0" buildNumber="{&quot;giteaURL&quot;: &quot;http://roicentersvn.ptcnet.ptc.com/api/v1/repos/BogdanMihaiciuc/BMCodeHost/releases/latest&quot;}"/>
   </ExtensionPackages>
   <Widgets>
     <Widget name="BMCodeHost">

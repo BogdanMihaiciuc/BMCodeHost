@@ -1,4 +1,4 @@
-# 2.6.2
+# 2.6.3
 
 Resolves an issue that caused scrollbars to appear in Thingworx 9.
 
