@@ -1412,9 +1412,9 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		}});
 		*/
 
-		codeWindow.BMCHDowngradeButton = self.createToolbarButtonWithClass('BMCHViewButton', {content: '⥥', tooltip: 'Downgrade to Expression - ⌘D', action: async function () {
+		codeWindow.BMCHDowngradeButton = self.createToolbarButtonWithClass('BMCHBindingsButton', {content: '⥥', tooltip: 'Downgrade to Expression - ⌘D', action: async function () {
 			const confirmationPopup = BMConfirmationPopup.confirmationPopupWithTitle('Downgrade to Expression', {
-				text: 'This action will downgrade this Object to one or several standard expressions.\nThis will cause several properties to be added to your mashup.',
+				text: 'This action will downgrade this Object to one or several standard expressions.\nThis will likely also cause several properties to be added to your mashup.',
 				positiveActionText: 'Downgrade',
 				negativeActionText: 'Don\'t Downgrade'
 			});
@@ -1449,7 +1449,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			codeWindow.BMCHCloseButton.classList.add('BMCHFullScreen');
 			//codeWindow.BMCHSaveButton.classList.add('BMCHFullScreen');
 			//codeWindow.BMCHBindingsButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHViewButton.classList.add('BMCHFullScreen');
+			codeWindow.BMCHDowngradeButton.classList.add('BMCHFullScreen');
 		//}
 		
 		$(codeWindow.content).on('keydown keypress keyup', function (event) {
