@@ -1,6 +1,6 @@
 # 2.6.3
 
-Resolves an issue that caused scrollbars to appear in Thingworx 9.
+Resolves an issue that caused unnecessary scrollbars to appear in the editor in Thingworx 9.
 
 # 2.6
 
