@@ -1389,6 +1389,10 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			codeWindow.title = title.value;
 		});
 		
+		/*
+		Save and bindings don't work in Thingworx 8.5 or 9.
+		View doesn't make much sense anymore without the matching save button.
+
 		// Create and initialize the save button
 		codeWindow.BMCHSaveButton = self.createToolbarButtonWithClass('BMCHSaveButton', {content: '<i class="material-icons">&#xE161;</i>', tooltip: 'Save - ⌘S', action: function (event) {
 			self.saveMashup();
@@ -1405,6 +1409,20 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		// Open button
 		codeWindow.BMCHViewButton = self.createToolbarButtonWithClass('BMCHViewButton', {content: '<i class="material-icons">&#xE89D;</i>', tooltip: 'View Mashup - ⌘V', action: function () {
 			self.openMashup();
+		}});
+		*/
+
+		codeWindow.BMCHDowngradeButton = self.createToolbarButtonWithClass('BMCHViewButton', {content: '⥥', tooltip: 'Downgrade to Expression - ⌘D', action: async function () {
+			const confirmationPopup = BMConfirmationPopup.confirmationPopupWithTitle('Downgrade to Expression', {
+				text: 'This action will downgrade this Object to one or several standard expressions.\nThis will cause several properties to be added to your mashup.',
+				positiveActionText: 'Downgrade',
+				negativeActionText: 'Don\'t Downgrade'
+			});
+
+			if (await confirmationPopup.confirm() == BMConfirmationPopupResult.Confirmed) {
+				// TODO
+				
+			}
 		}});
 		
 		// Full screen button
@@ -1429,8 +1447,8 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		
 		//if (codeWindow.isFullScreen) {
 			codeWindow.BMCHCloseButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHSaveButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHBindingsButton.classList.add('BMCHFullScreen');
+			//codeWindow.BMCHSaveButton.classList.add('BMCHFullScreen');
+			//codeWindow.BMCHBindingsButton.classList.add('BMCHFullScreen');
 			codeWindow.BMCHViewButton.classList.add('BMCHFullScreen');
 		//}
 		
