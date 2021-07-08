@@ -97,12 +97,6 @@ function BMCHLoadSnippets() {
 	window.BMCHDidLoadSnippets = YES;
 }
 
-window.setTimeout(function () {
-	if (!TW.monacoEditor) return;
-	
-	BMCodeHostCoreMonacoLoader();
-}, 0);
-
 var BMCHRootES6Library; // <String, nullable>
 var BMCHRootjQueryLibrary; // <String, nullable>
 var BMCHCoreUILibrary; // <String, nullable>
@@ -129,38 +123,6 @@ async function BMCodeHostLoadRootLibrariesWithCompletionHandler(handler) {
 	BMCHTWXLibrary = await TWXResponse.text();
 
 	return handler ? handler() : void 0;
-
-	/*var ES6XHR = new XMLHttpRequest();
-	
-	ES6XHR.open('GET', '/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/lib.es6.d.ts', YES);
-	
-	ES6XHR.onload = function () {
-		BMCHRootES6Library = ES6XHR.responseText;
-		
-		var jQueryXHR = new XMLHttpRequest();
-		
-		jQueryXHR.open('GET', '/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/jquery.d.ts', YES);
-		
-		jQueryXHR.onload = function () {
-			BMCHRootjQueryLibrary = jQueryXHR.responseText;
-			
-			var CoreUIXHR = new XMLHttpRequest();
-
-			CoreUIXHR.open('GET',  '/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/BMCoreUI.d.ts', YES);
-
-			CoreUIXHR.onload = function () {
-				BMCHCoreUILibrary = CoreUIXHR.responseText;
-
-				if (handler) handler();
-			}
-
-			CoreUIXHR.send();
-		}
-		
-		jQueryXHR.send();
-	};
-	
-	ES6XHR.send();*/
 }
 
 var _BMCodeHostLanguageValues = {};
@@ -1277,6 +1239,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			return o1.name == o2.name && o1.type == o2.type && o1.ordinal == o2.ordinal;
 		};
 		sidebarCollection.autoResizes = YES;
+		sidebarCollection.assignsReuseIdentifierAsClass = NO;
 		sidebarCollection.layout = new BMCollectionViewTableLayout();
 		sidebarCollection.layout.rowHeight = 22;
 		sidebarCollection.layout.showsHeaders = NO;
@@ -1368,9 +1331,16 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		});
 		codeWindow.toolbar.appendChild(title);
 
+		let needsResize = NO;
+
 		codeView.didSetFrame = frame => {
 			title.style.left = frame.origin.x + 4 + 'px';
-			codeEditor.resized();
+			if (codeEditor) {
+				codeEditor.resized();
+			}
+			else {
+				needsResize = YES;
+			}
 		}
 		
 		if (!('backdropFilter' in document.body.style) && !('webkitBackdropFilter' in document.body.style)) {
@@ -1480,7 +1450,9 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 				}
 			}
 		
-			//codeEditor.resized();
+			if (needsResize) {
+				codeEditor.resized();
+			}
 			
 			updateNavigationSidebar();
 			
