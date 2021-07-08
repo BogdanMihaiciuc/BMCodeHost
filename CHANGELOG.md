@@ -1,3 +1,13 @@
+# 2.6.8
+
+Improves compatibility with the latest monaco editor.
+
+Resolves an issue that caused the navigation sidebar to appear blank.
+
+Resolves an issue that could cause the properties panel to stop function when the editor was opened after being closed.
+
+Resolves a layout that could occur if the editor was opened after being closed.
+
 # 2.6.3
 
 Resolves an issue that caused unnecessary scrollbars to appear in the editor in Thingworx 9.
