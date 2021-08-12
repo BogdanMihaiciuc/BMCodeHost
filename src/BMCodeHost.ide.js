@@ -1086,6 +1086,10 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	
 		self.jqElement.find('.BMCHScriptEdit').click(self.editScript.bind(self));
 
+		if (codeWindow) {
+			codeWindow.anchorNode = self.jqElement[0];
+		}
+
 		if (language == BMCodeEditorLanguage.CSS && !self.getProperty('DirectLinkUUID')) {
 			self.setProperty('DirectLinkUUID', 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 				var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
