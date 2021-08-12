@@ -1,3 +1,7 @@
+# 2.6.10
+
+Resolves an issue that caused the code editor window to close towards the top-left corner after editing the script's title.
+
 # 2.6.8
 
 Improves compatibility with the latest monaco editor.
