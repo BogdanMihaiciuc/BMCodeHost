@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><Entities>
   <ExtensionPackages>
-    <ExtensionPackage name="BMCodeHost" packageVersion="2.6.3" description="Allows arbitrary JavaScript, TypeScript and CSS to be added to a mash-up. Requires BMCoreUI." vendor="ThingWorx Customer Service" minimumThingWorxVersion="6.0.0" buildNumber="{&quot;giteaURL&quot;: &quot;http://roicentersvn.ptcnet.ptc.com/api/v1/repos/BogdanMihaiciuc/BMCodeHost/releases/latest&quot;}"/>
+    <ExtensionPackage name="BMCodeHost" packageVersion="2.7.0" description="Allows arbitrary JavaScript, TypeScript and CSS to be added to a mash-up. Requires BMCoreUI." vendor="ThingWorx Customer Service" minimumThingWorxVersion="6.0.0" buildNumber="{&quot;giteaURL&quot;: &quot;http://roicentersvn.ptcnet.ptc.com/api/v1/repos/BogdanMihaiciuc/BMCodeHost/releases/latest&quot;}"/>
   </ExtensionPackages>
   <Widgets>
     <Widget name="BMCodeHost">
@@ -10,6 +10,7 @@
         <FileResource type="JS" file="BMCHSnippets.js" description="" isDevelopment="true" isRuntime="false"/>
         <FileResource type="CSS" file="BMCodeHost.runtime.css" description="" isDevelopment="false" isRuntime="true"/>
         <FileResource type="JS" file="BMCodeHost.runtime.js" description="" isDevelopment="false" isRuntime="true"/>
+        <FileResource type="JS" file="BMTypescriptClassHost.runtime.js" description="" isDevelopment="false" isRuntime="true"/>
       </UIResources>
     </Widget>
   </Widgets>
