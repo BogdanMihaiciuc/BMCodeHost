@@ -1769,6 +1769,10 @@ class MyWidget extends TypescriptWidget {
 	this.openBindings = function () {
 		if (language !== BMCodeEditorLanguage.CSS) self.updateRuntimeProperties();
 
+		if (codeEditor) {
+			BMWindow.minimizeAllAnimated();
+		}
+
 		// Switch back to this editor's mashup and select the widget before opening the bindings
 		if (tab) {
 			// In new composer, widgets are destroyed when switching tabs, therefore it's not possible
@@ -1780,8 +1784,11 @@ class MyWidget extends TypescriptWidget {
 		// Triggers open bindings in old composer, this will have no effect in new composer
 		self.jqElement.closest('#mashup-ide').find('#widget-properties-tabs').find('#open-configure-dialog').click();
 
-		// Triggers open bindings in new composer, this will have no effect in old composer
-		self.jqElement.closest('#tab-panel-mashup-ide-view').find('#widget-properties-title').find('.tw-icon-configure-bindings-alt').click();
+		// In new composer a delay is required, because selection is asynchronous
+		setTimeout(() => {
+			// Triggers open bindings in new composer, this will have no effect in old composer
+			self.jqElement.closest('#tab-panel-mashup-ide-view').find('#widget-properties-title').find('.tw-icon-configure-bindings-alt').click();
+		}, 16);
 	};
 	
 	/**
