@@ -1,6 +1,8 @@
 # 2.7
 
-Re-enables the use of the "Bindings", "View Mashup" and "Save" buttons in Thingworx 9.1 and newer.
+Re-enables the use of the "Bindings", "View Mashup" and "Save" buttons in Thingworx 9.1 and newer. When using the "Bindings" button, all code windows will minimize.
+
+Re-enabled the tooltips for the toolbar buttons.
 
 Added a new mechanism for importing data shapes as interfaces for better type checking. This can be accomplished using the syntax:
 ```ts
