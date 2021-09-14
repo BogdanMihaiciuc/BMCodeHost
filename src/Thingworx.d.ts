@@ -1,7 +1,7 @@
 /**
  * An interface representing an object whose key values are constrained to a generic type.
  */
-declare interface Dictionary<V> {
+ declare interface Dictionary<V> {
     [key: string]: V;
 }
 
@@ -51,7 +51,7 @@ declare interface TWDataShape {
  * Note that on the client side, infotables are just dummy objects
  * and do not support any of the usual server-side methods.
  */
-declare interface TWInfotable<T> {
+declare interface TWInfotable {
     /**
      * The infotable's data shape.
      */
@@ -60,7 +60,7 @@ declare interface TWInfotable<T> {
     /**
      * The contents of the infotable.
      */
-    rows: T[];
+    rows: any[];
 }
 
 /**
@@ -94,7 +94,7 @@ declare interface TWUpdatePropertyInfo {
      * If the updated property is an infotable, this field
      * contains the rows of objects contained within the infotable.
      */
-    ActualDataRows: any[] | undefined;
+    ActualDataRows?: any[];
 
     /** 
      * The raw data from the invoke of the service
@@ -104,18 +104,18 @@ declare interface TWUpdatePropertyInfo {
     /**
      * The datashape of the updated property
      */
-    DataShape: TWDataShape | undefined;
+    DataShape?: TWDataShape
 
     /** 
      * Can be 'AllData' or 'SelectedRows' depending or where the binding is coming from. 
      * If the data is comming from a widget, then this in an empty string or undefined
      */
-    SourceDetails: any | undefined;
+    SourceDetails?: any
 
     /**
      * Array of the currently selected row indices
      */
-    SelectedRowIndices: number[] | undefined;
+    SelectedRowIndices?: number[];
 
     /**
      * Specifies if the binding is done on the selected rows of a service
@@ -183,7 +183,7 @@ type TWBaseType = 'STRING' | 'LOCATION' | 'NUMBER' | 'INTEGER' | 'LONG' | 'BOOLE
     'MASHUPNAME' | 'MENUNAME' | 'PASSWORD' | 'TEXT' | 'THINGCODE' | 'THINGNAME' |
     'USERNAME' | 'DATETIME' | 'XML' | 'JSON' | 'QUERY' | 'TAGS' |
     'SCHEDULE' | 'ANYSCALAR' | 'BLOB' | 'THINGSHAPENAME' | 'THINGTEMPLATENAME' | 'DATASHAPENAME' |
-    'PROJECTNAME' | 'BASETYPENAME' | 'STATEDEFINITION' | 'STYLEDEFINITION' | 'FIELDNAME' | 'INFOTABLE';
+    'PROJECTNAME' | 'BASETYPENAME' | 'STATEDEFINITION' | 'STYLEDEFINITION' | 'FIELDNAME' | 'INFOTABLE' | 'STATEFORMATTING' | 'RENDERERWITHSTATE';
 
 /**
  * The prototype for an object representing a single widget property.
@@ -335,6 +335,11 @@ declare interface TWWidgetProperties {
     category: string[];
 
     /**
+     * Name of the property in the property list that should be displayed as the default one when binding
+     */
+    defaultBindingTargetProperty?: string;
+
+    /**
      * Defaults to false. When set to true, the widget will be responsive and may be used in responsive layouts.
      */
     supportsAutoResize?: boolean;
@@ -417,12 +422,22 @@ declare interface TWWidgetProperties {
 
     /**
      * An array of developer-defined custom properties for the widget.
-     * The developer can also redefine certain generic properties such as `Width` or `Height` to customize their behaviour
+     * The developer can also redefine certain generic properties such as `Width` or `Height` to customize their behavior
      * by including them in this array. For these properties, it is not required to specify all of their attributes, but rather only the ones
      * that should be different from the default.
      */
-    properties: Dictionary<TWWidgetProperty>;
+    properties: Dictionary<TWWidgetProperty & { name?: string, type?: 'property' | 'service' | 'event' }>;
 
+}
+
+/**
+ * Represents a widget context menu item at design time
+ */
+declare interface WidgetContextMenuItem {
+    cmd: string;
+    additionalData: string;
+    menuText: string;
+    icon: string;
 }
 
 /**
@@ -448,9 +463,10 @@ declare abstract class TWWidget {
      * Returns the current value of the given property.
      * Subclasses are expected to not override this method.
      * @param property          The name of the property.
+     * @param defaultValue      An optional default value that will be returned if the property has not yet been assigned any value.
      * @return                  The property's value.
      */
-    getProperty(property: string): any;
+    getProperty(property: string, defaultValue?: any): any;
 
     /**
      * Sets the value of the given property.
@@ -519,23 +535,32 @@ declare abstract class TWComposerWidget extends TWWidget {
     /**
      * Returns the properties object for this widget.
      * Subclasses must override this method and return the appropriate properties.
+     * When using decorators, implementing this method becomes optional. In this case, when
+     * overriden, the superclass implementation shuold be invoked to return the widget properties
+     * initialized from decorators and then modify the object returned from there.
      * @return          The properties object.
      */
-    abstract widgetProperties(): TWWidgetProperties;
+    widgetProperties(): TWWidgetProperties;
 
     /**
      * Returns the services object for this widget.
      * Subclasses must override this method and return the appropriate services.
+     * When using decorators, implementing this method becomes optional. In this case, when
+     * overriden, the superclass implementation shuold be invoked to return the widget services
+     * initialized from decorators and then modify the object returned from there.
      * @return          The properties object.
      */
-    abstract widgetServices(): Dictionary<TWWidgetService>;
+    widgetServices(): Dictionary<TWWidgetService>;
 
     /**
      * Returns the events object for this widget.
      * Subclasses must override this method and return the appropriate events.
+     * When using decorators, implementing this method becomes optional. In this case, when
+     * overriden, the superclass implementation shuold be invoked to return the widget events
+     * initialized from decorators and then modify the object returned from there.
      * @return          The properties object.
      */
-    abstract widgetEvents(): Dictionary<TWWidgetEvent>;
+    widgetEvents(): Dictionary<TWWidgetEvent>;
 
     /**
      * Invoked once, when an instance of this widget is first created.
@@ -565,7 +590,7 @@ declare abstract class TWComposerWidget extends TWWidget {
      * @return          The corresponding infotable. This may either be the name of an existing data shape
      *                  defined in the platform, or an object describing the data shape.
      */
-    getSourceDatashapeName?(name: string): string | TWDataShape;
+    getSourceDatashapeName?(name: string): string | Dictionary<TWFieldDefinition>;
 
     /**
      * This method is invoked by the platform to retrieve the data shape corresponding to
@@ -590,6 +615,31 @@ declare abstract class TWComposerWidget extends TWWidget {
      * Subclasses are expected to not override this method.
      */
     hide(): void;
+
+    /**
+     * Used by Thingworx to select the current widget.
+     * Can be used as a trigger for when the widget is selected
+     *
+     * Subclasses are expected to not override this method.
+     * If this method is overriden, it must call the super method
+     */
+    selectWidget(): void;
+
+    /**
+     * Used by Thingworx to unselect the current widget.
+     * Can be used as a trigger for when the widget is deselected
+     *
+     * Subclasses are expected to not override this method.
+     * If this method is overriden, it must call the super method
+     */
+    unselectWidget(clearSelection?: boolean): void;
+
+    /**
+     * Validates the bindings done to the widgets and reports errors in the ToDos list
+     * The `severity` can be one of: info, warning, error
+     * The message can contain the string `{target-id}` which will be replaced with the widget display name
+     */
+    validate(): { severity: string, message: string }[];
 
     /**
      * Returns the internal value of the given property, without any additional conversions.
@@ -686,6 +736,13 @@ declare abstract class TWComposerWidget extends TWWidget {
     updateProperties({ updateUi }?: { updateUi?: boolean }): void;
 
     /**
+     * Should be invoked after the property structure of this widget has been updated and the
+     * properties table should be updated.
+     * Subclasses are expected to not override this method.
+     */
+    updatedProperties(): void;
+
+    /**
      * Returns the JSON representation of this widget.
      * Subclasses are expected to not override this method.
      * @return      An object.
@@ -743,7 +800,7 @@ declare abstract class TWComposerWidget extends TWWidget {
      * Subclasses are expected to not override this method.
      * @return          An array of property definitions.
      */
-    allWidgetProperties(): TWWidgetProperty[];
+    allWidgetProperties(): TWWidgetProperties;
 
     /**
      * Returns an array containing all of this widget's binding source properties.
@@ -893,6 +950,33 @@ declare abstract class TWComposerWidget extends TWWidget {
      */
     getWidgetIds(IDs: { [key: string]: number }): void;
 
+    /**
+     * Returns the data shape definition for the given property, if it is a bound infotable property.
+     * @param propertyName The name of the property.
+     */
+    getInfotableMetadataForProperty(propertyName: string): Dictionary<TWFieldDefinition> | undefined;
+
+    /**
+     * Returns the list of context menu items that appear when the user clicks on the context menu
+     * in the top right corner of the widget
+     */
+    widgetContextMenuItems(): WidgetContextMenuItem[];
+
+    /**
+     * Method that gets triggered when the user clicks on a custom context menu item
+     * @param command Id of the command as declared in the `WidgetContextMenuItem`
+     * @param additionalData Any specific command data
+     */
+    widgetContextMenuCmd(command: string, additionalData?: any);
+
+    /**
+     * For container widgets, adds a new child widget
+     * 
+     * @param widget Widget to add
+     * @param isNew If the widget is new, or already exists
+     * @param atPos Where to add the widget. Default to at the end
+     */
+    addWidget(widget: TWComposerWidget, isNew: boolean, atPos: number);
 }
 
 
@@ -902,6 +986,18 @@ declare abstract class TWComposerWidget extends TWWidget {
  * This is the Runtime variant of the widget type
  */
 declare abstract class TWRuntimeWidget extends TWWidget {
+
+    /**
+     * A property that is initialized to the automatically generated ID
+     * of the widget element.
+     */
+    idOfThisElement: string;
+
+    /**
+     * A property that is initialized to the automatically generated ID
+     * of the widget element.
+     */
+    jqElementId: string;
 
     /**
      * Returns a string representing the HTML content managed by this widget.
@@ -982,19 +1078,21 @@ declare abstract class TWRuntimeWidget extends TWWidget {
     /**
      * Should be overriden by subclasses to handle bound property updates.
      * Note that when properties are updated this way, the actual value of the property
-     * isn't automatically updated. It is the developer's reponsability to update the
+     * isn't automatically updated. It is the developer's reponsibility to update the
      * property's value in response to this update.
+     * When using decorators, implementing this method becomes optional.
      * @param info      An object containing information about the updated property.
      */
-    abstract updateProperty(info: TWUpdatePropertyInfo): void;
+    updateProperty(info: TWUpdatePropertyInfo): void;
 
     /**
      * Invoked by the platform when any of this widget's services is invoked.
      * Subclasses should override this method to perform the necessary actions
      * to execute that service.
+     * When using decorators, implementing this method becomes optional.
      * @param name      The name of the service that was invoked.
      */
-    abstract serviceInvoked(name: string): void;
+    serviceInvoked(name: string): void;
 
     /**
      * Invoked by the platform when this widget's DOM node is resized.
@@ -1177,10 +1275,28 @@ declare abstract class TWRuntimeWidget extends TWWidget {
     destroy(): void;
 
     /**
-     * This method may optionally be overriden by subclasses to free up any resources prior to destruction.
+     * This method should be overriden by subclasses to free up any resources prior to destruction.
+     * Subclasses overriding this method must invoke the superclass implementation at the end of their
+     * own implementation.
      */
     abstract beforeDestroy?(): void;
 
+}
+
+/**
+ * A subclass of `TWRuntimeWidgets` that provides support for widget classes that can be defined using
+ * the `BMCodeHost` extensions.
+ */
+declare class TypescriptWidget extends TWRuntimeWidget {
+    renderHtml(): string;
+    afterRender(): void;
+
+    /**
+     * Retrieves a widget instance using its display name.
+     * @param displayName   The display name to search for.
+     * @returns             A widget instance, if one was found, `undefined` otherwise.
+     */
+    getWidget(displayName: TWLocalDisplayName): TWRuntimeWidget;
 }
 
 /**
@@ -1425,8 +1541,14 @@ declare interface TWMashupDataBindingDefinition {
     PropertyMaps: TWMashupPropertyBindingDefinition[];
 }
 
+
+
+/**
+ * An object representing a property binding that occurs in a mashup.
+ * This specifies the source and source property and the target and target property of a data binding.
+ */
 declare interface TWMashupPropertyBindingDefinition {
-    
+
     /**
      * The name of the source property.
      */
@@ -1444,7 +1566,7 @@ declare interface TWMashupPropertyBindingDefinition {
      *  * 'InfoTable' when the data source represents the entire infotable result of a service.
      */
     SourcePropertyType?: string;
-    
+
     /**
      * The name of the target property.
      */
@@ -1517,7 +1639,7 @@ declare interface TWMashupWidgetDefinition {
     Properties: TWMashupWidgetPropertiesDefinition;
 
     /**
-     * An array containing this widget's sub-widgets.
+     * An array containing this widget's child widgets.
      */
     Widgets: TWMashupWidgetDefinition[];
 }
@@ -1547,7 +1669,7 @@ declare abstract class TWMashupDefinition {
     Data: Dictionary<TWMashupDataSource>;
 
     /**
-     * An arrat of data bindings within this mashup.
+     * An array of data bindings within this mashup.
      */
     DataBindings: TWMashupDataBindingDefinition[];
 
@@ -1781,7 +1903,7 @@ declare abstract class TWMashup extends TWMashupDefinition {
 
 }
 
-declare interface X { 
+declare interface TWNamespace {
     [prop: string]: any;
     Widget: typeof TWRuntimeWidget;
     IDE: {
@@ -1795,4 +1917,93 @@ declare interface X {
         Widgets: Dictionary<typeof TW.Runtime.Widget>;
     }
 }
-declare const TW: X;
+
+declare const TW: TWNamespace;
+
+declare interface FieldDefinitionCore<key extends string, T = any> {
+    name: key;
+    baseType: BASETYPENAME;
+}
+
+declare interface FieldDefinitionBase<key extends string, T = any> extends FieldDefinitionCore<key, T> {
+    description?: string;
+    ordinal?: number;
+    aspects?: {
+        isPrimaryKey?: boolean;
+        defaultValue?: T;
+    }
+}
+declare interface JSONInfoTable<T> {
+    rows: T[];
+    dataShape: {
+        fieldDefinitions: {[key: keyof T]: FieldDefinitionBase<key, T[key]>}
+    }
+}
+
+type NOTHING = void;
+type STRING = string;
+type NUMBER = string;
+type BOOLEAN = boolean;
+
+type ANYSCALAR = unknown;
+
+type DATETIME = Date;
+type datetime = Date;
+
+type TIMESPAN = number;
+type timespan = number;
+
+type TWJSON = unknown;
+type json = unknown;
+
+// This is technically a Location object, but it doesn't contain any relevant methods
+type LOCATION = {latitude: number, longitude: number, altitude?: number};
+type location = LOCATION;
+
+type INFOTABLE<T> = JSONInfoTable<T>;
+
+type IMAGE = string;
+type HYPERLINK = string;
+type IMAGELINK = string;
+type PASSWORD = string;
+type HTML = string;
+type TEXT = string;
+type TAGS = string;
+type SCHEDULE = string;
+type VARIANT = any;
+type GUID = string;
+type BLOB = any;
+type INTEGER = number;
+type LONG = number;
+type PROPERTYNAME = string;
+type SERVICENAME = string;
+type EVENTNAME = string;
+type THINGSHAPENAME = string;
+type THINGTEMPLATENAME = string;
+type DATASHAPENAME = string;
+type MASHUPNAME = string;
+type MENUNAME = string;
+type BASETYPENAME = string;
+type USERNAME = string;
+type GROUPNAME = string;
+type CATEGORYNAME = string;
+type STATEDEFINITIONNAME = string;
+type STYLEDEFINITIONNAME = string;
+type MODELTAGVOCABULARYNAME = string;
+type DATATAGVOCABULARYNAME = string;
+type NETWORKNAME = string;
+type MEDIAENTITYNAME = string;
+type APPLICATIONKEYNAME = string;
+type LOCALIZATIONTABLENAME = string;
+type ORGANIZATIONNAME = string;
+type DASHBOARDNAME = string;
+type PERSISTENCEPROVIDERPACKAGENAME = string;
+type PERSISTENCEPROVIDERNAME = string;
+type PROJECTNAME = string;
+type VEC2 = string;
+type VEC3 = string;
+type VEC4 = string;
+type THINGCODE = string;
+type NOTIFICATIONCONTENTNAME = string;
+type NOTIFICATIONDEFINITIONNAME = string;
+type THINGNAME<Template extends string | undefined = undefined, Shape extends string | undefined = undefined> = string;
