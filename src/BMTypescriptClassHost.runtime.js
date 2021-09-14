@@ -17,7 +17,7 @@ export class TypescriptWidget extends TWRuntimeWidget {
         let widgets = [rootWidget];
         let index = 0;
         while (index < widgets.length) {
-            const widget = widgets[i];
+            const widget = widgets[index];
 
             if (widget.properties.DisplayName == name) return widget;
             widgets = widgets.concat(widget.getWidgets());
