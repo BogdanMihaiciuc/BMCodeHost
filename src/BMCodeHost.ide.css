@@ -1058,8 +1058,6 @@ div.BMCHReadonlyScriptTitle.BMCHScriptTitle {
 	white-space: nowrap;
 
 	min-width: 0px;
-
-	display: none;
 }
 
 .BMCHToolbarButton:hover.BMHasTooltip::after {
