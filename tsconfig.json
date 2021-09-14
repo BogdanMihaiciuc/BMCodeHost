@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "outDir": "./build/",
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "module": "CommonJS",
+        "target": "ES2019",
+        "downlevelIteration": true,
+        "experimentalDecorators": true,
+        "strict": true,
+        "declaration": true,
+        "lib": [
+            "esnext"
+        ],
+        "typeRoots": []
+    },
+    "include": [
+        "src/worker/*.ts", 
+    ]
+}
