@@ -1,3 +1,14 @@
+# 2.7
+
+Re-enables the use of the "Bindings", "View Mashup" and "Save" buttons in Thingworx 9.1 and newer.
+
+Added a new mechanism for importing data shapes as interfaces for better type checking. This can be accomplished using the syntax:
+```ts
+//#import shape GenericStringList
+```
+
+Added a new `Typescript Class` widget that makes use of decorators to expose properties, events and services instead of a separate properties panel and makes use of the technologies in [ThingworxDemoWebpackWidget](https://github.com/ptc-iot-sharing/ThingworxDemoWebpackWidget).
+
 # 2.6.10
 
 Resolves an issue that caused the code editor window to close towards the top-left corner after editing the script's title.
