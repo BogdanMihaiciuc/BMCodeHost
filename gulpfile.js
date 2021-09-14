@@ -3,6 +3,7 @@ const fs = require('fs');
 const xml2js = require('xml2js');
 const del = require('del');
 const deleteEmpty = require('delete-empty');
+const source = require('vinyl-source-stream');
 
 const { series, src, dest } = require('gulp');
 const zip = require('gulp-zip');
@@ -14,10 +15,16 @@ const request = require('request');
 
 const packageJson = require('./package.json');
 
+const ts = require('gulp-typescript');
+const project = ts.createProject('./tsconfig.json');
+
+const { rollup } = require('gulp-rollup-2');
+const resolve = require("@rollup/plugin-node-resolve");
+
 /**
  * Files to remove from the build.
  */
-const removeFiles = [];
+const removeFiles = ['worker/BMCodeHostTypescriptWorker.ts'];
 
 /**
  * Files from which the typescript definitions are created.
@@ -81,14 +88,36 @@ async function cleanBuildDir(cb) {
 }
 
 /**
- * Copies files into the build directory.
+ * Copies files into the build directory and thne compiles the worker typescript files.
  */
 function copy(cb) {
     src('src/**')
         .pipe(dest(`${outPath}/`))
-        .on('end', () => {
+        .on('end', async () => {
             fs.copyFileSync('metadata.xml', 'build/metadata.xml');
-            cb();
+
+            // Build the typescript worker, to be used in the future
+            await new Promise((resolve) => project.src().pipe(project()).js.pipe(dest(`${outPath}/worker`)).on('end', resolve));
+
+            // Build the typescript class host
+            src('./src/BMTypescriptClassHost.runtime.js')
+                .pipe(
+                    rollup({
+                        input: './src/BMTypescriptClassHost.runtime.js',
+                        output: {
+                            format: 'iife',
+                            file: 'BMTypescriptClassHost.runtime.js',
+                            name: 'TWSupport',
+                        },
+                        plugins: [
+                            resolve.default({
+                                module: true,
+                            })
+                        ]
+                    })
+                )
+                .pipe(dest(`${outPath}`))
+                .on('end', cb);
         });
 }
 
@@ -98,10 +127,12 @@ async function prepareBuild(cb) {
     if (removeFiles.length) await del(removeFiles.map(f => `${outPath}/${f}`));
 
     // Copy required dependencies
+    /*
     for (const dependency in packageJson.dependencies) {
         const dependencyPackageJson = require(`./node_modules/${dependency}/package.json`);
         await new Promise(resolve => src(`node_modules/${dependency}/${dependencyPackageJson.main}`).pipe(dest(outPath)).on('end', resolve));
     }
+    */
 
     await new Promise(resolve => {
         src(`${outPath}/**/*.js`)
@@ -154,7 +185,7 @@ async function prepareBuild(cb) {
                     let stream = src(group.files.map(f => `${outPath}/${f}`));
 
                     stream.pipe(concat(`${name}.js`))
-                        .pipe(terser({compress: true, mangle: {reserved: ['$w','$b','$j','self']}}))
+                        .pipe(terser({compress: true, mangle: {reserved: ['$w','$b','$j','self', 'TWWidgetDefinition', 'property', 'event', 'twevent', 'service', 'canBind', 'didBind']}}))
                         .pipe(dest(outPath))
                         .on('end', resolve);
                 });
