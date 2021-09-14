@@ -1107,6 +1107,9 @@ class MyWidget extends TypescriptWidget {
 		}
 		else {
 			delete properties.properties.DirectLink;
+			if (kind == 'class') {
+				delete properties.properties.Scope;
+			}
 		}
 
 		if (language == BMCodeEditorLanguage.Typescript) {
