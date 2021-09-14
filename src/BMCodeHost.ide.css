@@ -781,7 +781,7 @@ input.BMCHPropertyBaseType {
 
 }
 
-input.BMCHInput.BMCHScriptTitle {
+input.BMCHInput.BMCHScriptTitle, div.BMCHReadonlyScriptTitle.BMCHScriptTitle {
 	font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Segoe UI', sans-serif !important;
 	font-size: 24px !important;
 	font-weight: bold !important;
@@ -800,10 +800,15 @@ input.BMCHInput.BMCHScriptTitle {
 	position: absolute !important;
 }
 
+div.BMCHReadonlyScriptTitle.BMCHScriptTitle {
+	margin-left: 16px !important;
+	pointer-events: none;
+}
+
 
 @media (prefers-color-scheme: dark) {
 
-	input.BMCHScriptTitle {
+	input.BMCHScriptTitle, div.BMCHScriptTitle {
 		color: rgba(255, 255, 255, .8) !important;
 	}
 
