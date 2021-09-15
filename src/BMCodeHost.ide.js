@@ -617,7 +617,7 @@ class MyWidget extends TypescriptWidget {
 	 * @param targetArray <[Object]>		An array to which the exportable widgets will be added.
 	 */
 	function findExportsInWidget(rootWidget, targetArray) {
-		if (rootWidget.Properties.Type == 'BMCodeHost' || rootWidget.Properties.Type == 'BMTypescriptHost') {
+		if (rootWidget.Properties.Type == 'BMCodeHost' || rootWidget.Properties.Type == 'BMTypescriptHost' || rootWidget.properties.Type == 'BMTypescriptClassHost') {
 			targetArray.push({
 				title: rootWidget.Properties.Title,
 				exports: rootWidget.Properties.Exports,
@@ -850,7 +850,7 @@ class MyWidget extends TypescriptWidget {
 						while (widgets.length) {
 							let widget = widgets[0];
 
-							if (widget.properties.Type == 'BMCodeHost' || widget.properties.Type == 'BMTypescriptHost') {
+							if (widget.properties.Type == 'BMCodeHost' || widget.properties.Type == 'BMTypescriptHost' || widget.properties.Type == 'BMTypescriptClassHost') {
 								if (widget.properties.Title == importAction.import.object) {
 									if (widget.properties.Scope === 'global') {
 										importAction.import.code = widget.properties.Code;
