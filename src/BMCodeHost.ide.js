@@ -2360,8 +2360,8 @@ class MyWidget extends TypescriptWidget {
 							for (const aspect of member.aspects) {
 								switch (aspect.name) {
 									// The following aspects are IDE aspects which are ignored at runtime
-									case 'bindingSource':
-									case 'bindingTarget':
+									case 'isBindingSource':
+									case 'isBindingTarget':
 										hasBindingAspect = YES;
 									case 'dataShape':
 									case 'selectOptions':
@@ -2435,8 +2435,10 @@ class MyWidget extends TypescriptWidget {
 				// The data shape is only used for infotables and actually handled later
 				var dataShape = runtimeProperties[i].dataShape;
 
-				const isBindingTarget = 'isBindingTarget' in runtimeProperties[i] ? runtimeProperties[i].isBindingTarget : YES;
-				const isBindingSource = 'isBindingSource' in runtimeProperties[i] ? runtimeProperties[i].isBindingSource : YES;
+				const hasBindingAspect = 'isBindingTarget' in runtimeProperties[i] || 'isBindingSource' in runtimeProperties[i];
+
+				const isBindingTarget = hasBindingAspect ? runtimeProperties[i].isBindingTarget : YES;
+				const isBindingSource = hasBindingAspect ? runtimeProperties[i].isBindingSource : YES;
 				
 				// Build the definition for the current property
 				// All user-defined properties are both binding targets and sources
