@@ -11,6 +11,11 @@ Added a new mechanism for importing data shapes as interfaces for better type ch
 
 Added a new `Typescript Class` widget that makes use of decorators to expose properties, events and services instead of a separate properties panel and makes use of the technologies in [ThingworxDemoWebpackWidget](https://github.com/ptc-iot-sharing/ThingworxDemoWebpackWidget).
 
+The following behaviours have been removed in this version:
+ - The script switcher button added to the mashup toolbar has been removed
+ - Scrolling on a code editor toolbar will no longer activate the window picker
+ - The `cmd+;` and `cmd+'` keyboard shortcuts have been removed
+
 # 2.6.10
 
 Resolves an issue that caused the code editor window to close towards the top-left corner after editing the script's title.

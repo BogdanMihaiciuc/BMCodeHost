@@ -1,4 +1,4 @@
-////<reference path="./types.ts"/>
+///<reference path="../../BMCoreUI/build/ui/BMCoreUI/BMCoreUI.d.ts"/>
 
 var CHFunctionRegex = /([^ \t\r\n\f+\-=.<>?:()[\]*\\\/!%]+)\s*\.(\S+)\s*=\s*function\s*[^()]*\s*\(.*\)|function\s*(\S+)\s*\(.*\)|(\S+)\s*:\s*function\s*[^()]*\s*\(.*\)/g;
 var CHMarkRegex = /\s*\/\/\s*MARK:\s*(.*)/g;
@@ -9,63 +9,6 @@ if (!window.BMMaterialFontsLoaded) {
 	
 	$('head').append('<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">');
 }
-
-function BMCodeHostCoreMonacoLoader() {
-	if (!window.require) {
-		return window.setTimeout(BMCodeHostCoreMonacoLoader, 100);
-	}
-	
-	var extRoot = "/Thingworx/Common/extensions/MonacoScriptEditor/ui/monacoScriptEditor";
-	
-	require.config({
-	    paths: {
-	        "vs": extRoot + "/vs"
-	    }
-	});
-		    
-	require(["vs/editor/editor.main"], function () {});
-}
-
-
-setTimeout(function () {
-	let twStudio = document.querySelector('#twStudioBody');
-	if (twStudio) {
-		twStudio.style.backgroundColor = 'white';
-		let pageWindow = {node: twStudio, get frame() {return BMRectMake(0, 0, window.innerWidth, window.innerHeight)}};
-		BMWindow.registerShowcaseElement(pageWindow);
-
-		let _enterShowcase = BMWindow.enterShowcase;
-		BMWindow.enterShowcase = function () {
-			_enterShowcase.apply(this, arguments);
-
-			BMAnimateWithBlock(() => {
-				BMAnimationContextEnableWebAnimations();
-		
-				let header = document.getElementById('twStudioHeader');
-				let headerController = BMAnimationContextGetCurrent().controllerForObject(header, {node: header});
-				headerController.registerBuiltInProperty('translateY', {withValue: -header.offsetHeight + 'px'});
-			}, {duration: 300, easing: 'easeInOutQuad'});
-		}
-		
-
-		let _exitShowcase = BMWindow.exitShowcase;
-		BMWindow.exitShowcase = function () {
-			_exitShowcase.apply(this, arguments);
-
-			BMAnimateWithBlock(() => {
-				BMAnimationContextEnableWebAnimations();
-		
-				let header = document.getElementById('twStudioHeader');
-				let headerController = BMAnimationContextGetCurrent().controllerForObject(header, {node: header});
-				headerController.registerBuiltInProperty('translateY', {withValue: '0px'});
-			}, {duration: 300, easing: 'easeInOutQuad'});
-		}
-	}
-	else {
-		/*let pageWindow = {node: document.querySelector('.aurelia-main'), get frame() {return BMRectMake(0, 0, window.innerWidth, window.innerHeight)}};
-		BMWindow.registerShowcaseElement(pageWindow);*/
-	}
-}, 500);
 
 function BMCHLoadSnippets() {
 	let snippets = [];
@@ -380,12 +323,42 @@ class MyWidget extends TypescriptWidget {
 		}
 
 		if (useAST) {
-			let worker = await monaco.languages.typescript.getLanguageWorker(language);
+			let worker;
+			// The method to obtain the typescript worker depends on the monaco editor extension version
+			if (monaco.languages.typescript.getLanguageWorker) {
+				worker = await monaco.languages.typescript.getLanguageWorker(language);
+			}
+			else {
+				switch (language) {
+					case BMCodeEditorLanguage.Javascript:
+						worker = await monaco.languages.typescript.getJavaScriptWorker();
+						break;
+					case BMCodeEditorLanguage.Typescript:
+						worker = await monaco.languages.typescript.getTypeScriptWorker();
+						break;
+				}
+			}
 			let client = await worker(codeEditor._monaco.getModel().uri);
 
 			let outlineTokens = await client.getOutline(codeEditor._monaco.getModel().uri.toString());
 
 			if (kind == 'class') {
+				if (!client.getWidgetClassInformation) {
+					// Class host requires a recent version of monaco
+					const confirmation = BMConfirmationPopup.confirmationPopupWithTitle('Monaco Editor Required', {text: "A newer version of the MonacoEditorTWX extension is required to use this widget.\nClick \"Download\" to navigate to that extension's GitHub page.", positiveActionText: 'Download', negativeActionText: 'Cancel'});
+					confirmation.confirm().then(result => {
+						if (result == BMConfirmationPopupResult.Confirmed) {
+							window.open('https://github.com/ptc-iot-sharing/MonacoEditorTWX', '_blank');
+						}
+					});
+
+					if (codeWindow) {
+						codeWindow.dismissAnimated(YES);
+					}
+
+					return;
+				}
+
 				// In class mode, use the client to obtain information about the decorated fields of the widget class
 				let classDefinition = await client.getWidgetClassInformation(codeEditor._monaco.getModel().uri.toString());
 				if (classDefinition.name) {
@@ -1251,53 +1224,6 @@ class MyWidget extends TypescriptWidget {
 			}));
 		}
 
-		var toolbar = this.jqElement.closest('#mashup-ide-workspace-pane').find("#mashup-toolbar");
-		var scriptButton = toolbar.find(".script-button");
-
-		if (scriptButton.length == 0) {
-			var groups = toolbar.find('.btn-group');
-
-			groups.eq(groups.length - 1).after($('<div class="btn-group script-button">\
-				<button type="button" class="btn btn-mini" title="Enter Showcase">\
-					<i class="twicon-MashupScript" style="background-image: url(/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/images/Object@2x.png); background-size: 16px 16px;"></i>\
-				</button>\
-				</div>'));
-
-
-			scriptButton = toolbar.find(".script-button");
-
-			scriptButton.click(function () {
-				return BMWindow.enterShowcase();
-
-				document.body.style.backgroundColor = 'gray';
-				document.querySelector('#tab-panel-mashup-ide-view').style.display = 'none';
-
-				let center = BMWindowMakeWithFrame(BMRectMake(256, 0, document.body.offsetWidth - 512, document.body.offsetHeight - 256), {toolbar: YES, modal: NO});
-				center.content.appendChild(document.querySelector("#flex-workspace"));
-				center.content.classList.add('BMWindowMashupContent');
-				center.node.classList.add('BMWindowMashup');
-
-				let bottom = BMToolWindow.toolWindowWithFrame(BMRectMake(256, document.body.offsetHeight - 256, document.body.offsetWidth - 512, 256), {forWindow: center});
-				bottom.content.appendChild(document.querySelector("#model-window"));
-				bottom.content.classList.add('BMWindowMashupContent');
-				//bottom.bringToFrontAnimated(YES);
-
-				let leftWindow = BMToolWindow.toolWindowWithFrame(BMRectMake(0, 0, 256, document.body.offsetHeight), {forWindow: center});
-				leftWindow.content.appendChild(document.querySelector("#leftDock"));
-				leftWindow.content.classList.add('BMWindowMashupContent');
-				//leftWindow.bringToFrontAnimated(YES);
-
-				let rightWindow = BMToolWindow.toolWindowWithFrame(BMRectMake(document.body.offsetWidth - 256, 0, 256, document.body.offsetHeight), {forWindow: center});
-				rightWindow.content.appendChild(document.querySelector("#rightDock"));
-				rightWindow.content.classList.add('BMWindowMashupContent');
-				rightWindow.content.classList.add('BMWindowMashupPropertyContent');
-				//rightWindow.bringToFrontAnimated(YES);
-
-				center.bringToFrontAnimated(YES);
-			});
-
-		}
-
 	}
 
 	// Represents the mashup's tab element
@@ -1319,9 +1245,15 @@ class MyWidget extends TypescriptWidget {
 			return;
 		}
 
-		if (language == BMCodeEditorLanguage.Typescript && !window.monaco) {
-			// Typescript requires monaco, fail if it isn't present
-			return alert('Typescript requires the Monaco extension.');
+		if (!window.monaco) {
+			// BMCodeHost requires monaco, fail if it isn't present
+			const confirmation = BMConfirmationPopup.confirmationPopupWithTitle('Monaco Editor Required', {text: "The MonacoEditorTWX extension is required to edit this widget.\nClick \"Download\" to navigate to that extension's GitHub page.", positiveActionText: 'Download', negativeActionText: 'Cancel'});
+			confirmation.confirm().then(result => {
+				if (result == BMConfirmationPopupResult.Confirmed) {
+					window.open('https://github.com/ptc-iot-sharing/MonacoEditorTWX', '_blank');
+				}
+			});
+			return;
 		}
 		
 		var windowFrame = BMRectMakeWithOrigin(BMPointMake(
@@ -1641,6 +1573,10 @@ class MyWidget extends TypescriptWidget {
 		
 	};
 
+	this.windowShouldEnterShowcase = function () {
+		return NO;
+	}
+
 	this.windowWillMinimize = function () {
 		if (!TW.minimizeStripCreated) {
 			TW.minimizeStripCreated = YES;
@@ -1831,17 +1767,9 @@ class MyWidget extends TypescriptWidget {
 		
 		if (codeWindow.isFullScreen) {
 			codeWindow.exitFullScreenAnimated(YES, {completionHandler: completeCallback});
-			/*codeWindow.BMCHCloseButton.classList.remove('BMCHFullScreen');
-			codeWindow.BMCHSaveButton.classList.remove('BMCHFullScreen');
-			codeWindow.BMCHBindingsButton.classList.remove('BMCHFullScreen');
-			codeWindow.BMCHViewButton.classList.remove('BMCHFullScreen');*/
 		}
 		else {
 			codeWindow.enterFullScreenAnimated(YES, {completionHandler: completeCallback});
-			/*codeWindow.BMCHCloseButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHSaveButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHBindingsButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHViewButton.classList.add('BMCHFullScreen');*/
 		}
 		
 		self.setProperty('FullScreen', codeWindow.isFullScreen);
@@ -1910,24 +1838,6 @@ class MyWidget extends TypescriptWidget {
 
 			let activeElement = document.activeElement;
 			
-			if (code == 222) {
-				eventHandled = YES;
-				self.isTabbing = YES;
-				self.tabToNextCodeHost();
-			}
-			
-			if (code == 186) {
-				eventHandled = YES;
-				self.isTabbing = YES;
-				self.tabToPreviousCodeHost();
-			}
-			
-			if (self.isTabbing) {
-				event.stopPropagation();
-				event.preventDefault();
-				return;
-			}
-			
 			if (hasPropertiesView) {
 				if (code == 49 && event.shiftKey) {
 					eventHandled = YES;
@@ -1969,31 +1879,6 @@ class MyWidget extends TypescriptWidget {
 			}
 			
 		});
-		
-		$(window).on('keyup.BMCodeHost', function (event) {
-			if (!self.isTabbing) return;
-			
-			var code = event.which || event.keyCode;
-			
-			if (code == 17 || code == 91 || code == 18 || code == 93) {
-				self.isTabbing = NO;
-				self.commitCmdTab();
-				event.stopPropagation();
-				event.preventDefault();
-			}
-		});
-		
-		$(window).on('resize.BMCodeHost', function (event) {
-			/*codeWindow.frame = BMRectMakeWithOrigin(BMPointMake(
-					window.innerWidth * .05 | 0,
-					window.innerHeight * .05 | 0
-				), {size: BMSizeMake(
-					window.innerWidth * .9 | 0,
-					window.innerHeight * .9 | 0
-				)});
-				
-			codeEditor.resized();*/
-		});
 	};
 	
 	/**
@@ -2011,286 +1896,6 @@ class MyWidget extends TypescriptWidget {
 			codeWindow.dismissAnimated(NO);
 		}
 	}
-	
-/*
-****************************************************************************************************************************************************************
-																Cmd-Tab Controller
-****************************************************************************************************************************************************************
-*/
-
-	/**
-	 * The cmd tab controller manages switching between scripts and styles using keyboard shortcuts.
-	 * Despite its name, the controller itself does not actually register any keyboard shortcuts, but instead is responsible for
-	 * creating the on-screen list of code hosts, navigating between them and switching to a different code host.
-	 *
-	 * Its methods should generally be invoked in response to keyboard shortcuts.
-	 *
-	 * Constructing a cmd tab controller will cause its window to automatically become visible on the screen.
-	 *
-	 * @return <BMCHCmdTabController>		A cmd tab controller.
-	 */
-	function BMCHCmdTabController () { // <constructor>
-		
-		// Retain the list of available code hosts
-		this.codeHosts = codeHosts;
-	
-		// Build the window that will show the available code hosts
-		var cmdTabFrame = BMRectMake(0, 0, 384, codeHosts.length * 44);
-		cmdTabFrame.center = BMPointMake(window.innerWidth / 2, window.innerHeight / 2);
-	
-		var cmdTabWindow = new BMWindow().initWithFrame(cmdTabFrame, {toolbar: NO});
-		cmdTabWindow.delegate = this;
-		
-		// Create the contents, which is an empty container for a collection view
-		var content = window.document.createElement('div');
-		content.className = 'BMCHCmdTabView';
-		
-		cmdTabWindow.content.appendChild(content);
-		
-		// Create the collection view that manages the on-screen list of code hosts
-		var collectionView = BMCollectionViewMakeWithContainer($(content));
-		
-		this.collectionView = collectionView;
-		collectionView.layout = new BMCollectionViewTableLayout();
-		collectionView.layout.rowHeight = 44;
-		collectionView.delegate = this;
-		
-		// Automatically select the current code host
-		codeHosts.forEach(function (codeHost, index) {
-			if (codeHost.widget == self) collectionView.selectedIndexPaths = [BMIndexPathMakeWithRow(index, {section: 0, forObject: codeHost})];
-		});
-		
-		// Make the window visible
-		var controller = this;
-		cmdTabWindow.bringToFrontAnimated(YES, {completionHandler: function () {
-			collectionView.resized();
-		}});
-		setTimeout(function () {
-			collectionView.dataSet = controller;
-			document.activeElement.blur();
-		}, 0);
-		
-		/**
-		 * Should be invoked to dismiss this cmd tab controller.
-		 * Invoking this method does not cause the currently selected code host to become active.
-		 */
-		this.dismiss = function () {
-			cmdTabWindow.dismissAnimated(YES);
-		};
-		
-	}
-	
-	BMCHCmdTabController.prototype = {
-		// @override - BMCollectionViewDataSet
-		numberOfSections: function () { return 1; },
-		// @override - BMCollectionViewDataSet
-		numberOfObjectsInSectionAtIndex: function (index) { return this.codeHosts.length; },
-		// @override - BMCollectionViewDataSet
-		indexPathForObjectAtRow: function (row, args) {
-			return BMIndexPathMakeWithRow(row, {section: 0, forObject: this.codeHosts[row]});
-		},
-		// @override - BMCollectionViewDataSet
-		indexPathForObject: function () {
-			// Unused because the cmd-tab controller never invalidates its data or layout
-		},
-		// @override - BMCollectionViewDataSet
-		contentsForCellWithReuseIdentifier: function (identifier) {
-			return $('<div class="BMCHCmdTabItem"></div>');
-		},
-		// @override - BMCollectionViewDataSet
-		cellForItemAtIndexPath: function (indexPath) {
-			var cell = this.collectionView.dequeueCellForReuseIdentifier('BMCHCmdTabItem');
-			this.updateCell(cell, {atIndexPath: indexPath});
-			return cell;
-		},
-		// @override - BMCollectionViewDataSet
-		updateCell: function (cell, args) {
-			$(cell.node).find('.BMCHCmdTabItem').text(args.atIndexPath.object.name);
-			
-			if (this.collectionView.isCellAtIndexPathSelected(args.atIndexPath)) {
-				$(cell.node).addClass('BMCHCmdTabItemSelected');
-			}
-			else {
-				$(cell.node).removeClass('BMCHCmdTabItemSelected');
-			}
-		},
-		// @override - BMCollectionViewDelegate
-		collectionViewDidSelectCellAtIndexPath: function (collectionView, indexPath) {
-			var cell = collectionView.cellAtIndexPath(indexPath, {ofType: BMCellAttributesType.Cell});
-			
-			if (cell) {
-				$(cell.node).addClass('BMCHCmdTabItemSelected');
-			}
-		},
-		// @override - BMCollectionViewDelegate
-		collectionViewDidDeselectCellAtIndexPath: function (collectionView, indexPath) {
-			var cell = collectionView.cellAtIndexPath(indexPath, {ofType: BMCellAttributesType.Cell});
-			
-			if (cell) {
-				$(cell.node).removeClass('BMCHCmdTabItemSelected');
-			}
-		},
-		// @override - BMCollectionViewDelegate
-		collectionViewCellWasClicked: function (collectionView, cell) {
-			collectionView.selectedIndexPaths = [cell.indexPath];
-			self.commitCmdTab();
-			
-			return YES;
-		},
-		// @override - BMWindowDelegate
-		windowDidClose: function (window) {
-			this.collectionView.release();
-			window.release();
-		},
-		// @override - BMWindowDelegate
-		windowShouldClose: function (window) {
-			return NO;
-		},
-		/**
-		 * Should be invoked to select the next code host in the list.
-		 * If the currently selected code host is the last one, this method will select the first code host.
-		 */
-		nextCodeHost: function () {
-			var indexPath = this.collectionView.selectedIndexPaths[0].copy();
-			
-			indexPath.row++;
-			
-			if (indexPath.row >= this.numberOfObjectsInSectionAtIndex(0)) {
-				indexPath.row = 0;
-			}
-			
-			indexPath.object = codeHosts[indexPath.row];
-			
-			this.collectionView.selectedIndexPaths = [indexPath];
-		},
-		/**
-		 * Should be invoked to select the previous code host in the list.
-		 * If the currently selected code host is the first one, this method will select the last code host.
-		 */
-		previousCodeHost: function () {
-			var indexPath = this.collectionView.selectedIndexPaths[0].copy();
-			
-			indexPath.row--;
-			
-			if (indexPath.row < 0) {
-				indexPath.row = this.numberOfObjectsInSectionAtIndex(0) - 1;
-			}
-			
-			indexPath.object = codeHosts[indexPath.row];
-			
-			this.collectionView.selectedIndexPaths = [indexPath];
-		}
-	};
-	
-	var cmdTabController; // <BMCHCmdTabController>
-	
-	/**
-	 * Constructs a cmd tab controller.
-	 * The controller will be assigned to the cmdTabController variable.
-	 */
-	this.initCmdTabController = function () {
-		cmdTabController = new BMCHCmdTabController();
-	};
-	
-	/**
-	 * Finds and constructs a list of available code hosts in the current mashup.
-	 * The code host list will be asigned to the codeHosts variable.
-	 */
-	this.initCodeHosts = function () {
-		var codeHostWidgets = [];
-		
-		function BMFindCodeHostsRecursive(container) {
-	
-			var widgets = container.widgets;
-			var length = widgets.length;
-			
-			for (var i = 0; i < length; i++) {
-				var widget = widgets[i];
-				
-				if (widget.properties.Type == 'BMCodeHost' || widget.properties.Type == 'BMCSSHost' || widget.properties.Type == 'BMTypescriptHost') codeHostWidgets.push(widget);
-				
-				var subWidgets = widget.widgets;
-				if (subWidgets.length > 0) {
-					BMFindCodeHostsRecursive(widget);
-				}
-				
-			}
-			
-		}
-		
-		function BMGetRootWidgetFromWidget(widget) {
-			var rootWidget = widget;
-			while (rootWidget) {
-				rootWidget = widget.parentWidget;
-				
-				widget = rootWidget || widget;
-			}
-			
-			return widget;
-		}
-		
-		BMFindCodeHostsRecursive(BMGetRootWidgetFromWidget(this));
-		
-		codeHosts = [];
-		
-		codeHostWidgets.forEach(function (widget) {
-			codeHosts.push({
-				name: widget.properties.Title + '.' + (widget.properties.Type == 'BMCodeHost' ? 'js' : 'css'),
-				widget: widget
-			});
-		});
-	};
-	
-	/**
-	 * Should be invoked to select the next code host.
-	 * If the list of available code hosts is not initialized when this method is invoked, it will be initialized before attempting to change the selection.
-	 * Similarly, if no cmd tab controller exists, one will be created.
-	 */
-	this.tabToNextCodeHost = function () {
-		if (!codeHosts) this.initCodeHosts();
-		if (!cmdTabController) {
-			this.initCmdTabController();
-		}
-		cmdTabController.nextCodeHost();
-	};
-	
-	
-	/**
-	 * Should be invoked to select the previous code host.
-	 * If the list of available code hosts is not initialized when this method is invoked, it will be initialized before attempting to change the selection.
-	 * Similarly, if no cmd tab controller exists, one will be created.
-	 */
-	this.tabToPreviousCodeHost = function () {
-		if (!codeHosts) this.initCodeHosts();
-		if (!cmdTabController) {
-			this.initCmdTabController();
-		}
-		cmdTabController.previousCodeHost();
-	};
-	
-	/**
-	 * Should be invoked to switch to the currently selected code host in the cmd tab controller.
-	 * If that code host is this instance, nothing happens.
-	 *
-	 * Invoking this method will cause the current cmd tab controller to be dismissed.
-	 */
-	this.commitCmdTab = function () {
-		this.isTabbing = NO;
-		
-		// Retrieve the code host instance corresponding to the current selection
-		var codeHost = cmdTabController.collectionView.selectedIndexPaths[0].object;
-		
-		if (codeHost.widget != this) {
-			// If it is different from this instance, dismiss this instance, then begin editing the selected one after the animation ends
-			codeWindow.dismissAnimated(YES, {toNode: this.jqElement[0], completionHandler: function () {
-				codeHost.widget.editScript();
-			}});
-		}
-		
-		cmdTabController.dismiss();
-		cmdTabController = undefined;
-		
-	};
 	
 /*
 ****************************************************************************************************************************************************************
