@@ -2121,6 +2121,11 @@ type location = LOCATION;
 
 type INFOTABLE<T> = JSONInfoTable<T>;
 
+type RENDERERWITHFORMAT = unknown;
+type RENDERERWITHSTATE = unknown;
+
+type FIELDNAME = string;
+
 type IMAGE = string;
 type HYPERLINK = string;
 type IMAGELINK = string;

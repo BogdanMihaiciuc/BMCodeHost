@@ -66,6 +66,24 @@ function canBind(name: string): TWRuntimePropertyAspect;
 function didBind(name: string): TWRuntimePropertyAspect;
 
 /**
+ * Constructs and returns a property aspect that specifies what infotable the widget
+ * should look into when displaying the available fields, when the baseType is set to `'FIELDNAME'`.
+ * This must be the name of one of this widget's infotable properties.
+ * @param {string} name                         The name of the infotable property.
+ * @return {TWSourceInfotablePropertyAspect}    A property aspect.
+ */
+function sourcePropertyName(name: string): TWRuntimePropertyAspect;
+
+/**
+ * Constructs and returns a property aspect that specifies what infotable
+ * property this rendering is based upon when the baseType is set to `'RENDERERWITHFORMAT'`. 
+ * This must be the name of one of this widget's infotable properties.
+ * @param {string} name         The name of the infotable property.
+ * @return {TWPropertyAspect}   A property aspect.
+ */
+function baseTypeInfotableProperty(name: string): TWRuntimePropertyAspect;
+
+/**
  * Returns a decorator that binds the class member it is applied to to a property definition.
  * @param  {...TWRuntimePropertyAspect} args        An optional list of property aspects to apply to this property.
  * @return {any}                                    A decorator.
