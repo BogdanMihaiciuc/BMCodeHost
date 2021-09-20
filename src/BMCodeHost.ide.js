@@ -89,6 +89,8 @@ TW.IDE.Widgets.BMCodeHost = function (language, kind) {
 	// Property view is only available on ts and js objects
 	const hasPropertiesView = language !== BMCodeEditorLanguage.CSS && kind != 'class';
 
+	let supportsClass = YES;
+
 	// Default value overrides based on the specified kind
 	const _BMCodeHostKindValues = {
 		object: {
@@ -354,6 +356,8 @@ class MyClass extends TypescriptWidget {
 
 			if (kind == 'class') {
 				if (!client.getWidgetClassInformation) {
+					supportsClass = NO;
+
 					// Class host requires a recent version of monaco
 					const confirmation = BMConfirmationPopup.confirmationPopupWithTitle('Monaco Editor Required', {text: "A newer version of the MonacoEditorTWX extension is required to use this widget.\nClick \"Download\" to navigate to that extension's GitHub page.", positiveActionText: 'Download', negativeActionText: 'Cancel'});
 					confirmation.confirm().then(result => {
@@ -1958,6 +1962,9 @@ class MyClass extends TypescriptWidget {
 				properties.length = 0;
 				services.length = 0;
 				events.length = 0;
+
+				// If class support isn't enabled, the class definition will not have a valid value
+				if (!supportsClass) return;
 			}
 
 			if (extractedClassDefinition && extractedClassDefinition.members) {
