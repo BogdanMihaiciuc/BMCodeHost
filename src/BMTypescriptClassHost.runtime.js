@@ -37,6 +37,8 @@ export function TWWidgetDefinition(widget) {
 // These objects are only used for IDE metadata and will have no effect at runtime
 export const bindingTarget = {_key: '_bindingTarget', _value: true};
 export const bindingSource = {_key: '_bindingSource', _value: true};
+export const sourcePropertyName = {_key: '_sourcePropertyName', _value: true};
+export const baseTypeInfotableProperty = {_key: '_baseTypeInfotableProperty', _value: true};
 const twevent = event;
 
 export {property, event, service, canBind, didBind, twevent};
