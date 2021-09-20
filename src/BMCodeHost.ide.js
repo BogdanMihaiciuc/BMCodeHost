@@ -97,19 +97,29 @@ TW.IDE.Widgets.BMCodeHost = function (language, kind) {
 		},
 		class: {
 			name: 'Typescript Class',
-			title: 'class',
+			title: 'MyClass',
 			description: 'Represents a typescript widget class that can be implemented.',
-			code: `
+			code: `// Class to be used at runtime
+
 @TWWidgetDefinition
-class MyWidget extends TypescriptWidget {
-    @property myProperty?: STRING;
+class MyClass extends TypescriptWidget {
+	// Declare widget properties using the @property decorator
+    @property(bindingTarget) label!: STRING;
 
-    @twevent myEvent!: TWEvent;
+	@property(bindingTarget, bindingSource) value!: number;
 
+	// Declare widget events using the @twevent decorator
+    @twevent serviceInvoked!: TWEvent;
+
+	// Declare widget services using the @service decorator
     @service myService() {
 
+		// Trigger events by invoking them
+		this.serviceInvoked();
     }
 
+	// Override any widget method needed; afterRender and renderHtml can be
+	// overriden to display this widget at runtime
     beforeDestroy() {
 
     }
