@@ -74,6 +74,20 @@
 	left: -4px;
 }
 
+.BMCHTypescriptClassIcon {
+	width: 32px;
+	height: 32px;
+	
+	background-image: url(images/TypeScriptClassLarge@2x.png);
+	background-size: 32px 32px;
+	
+	display: block;
+	float: left;
+
+	position: relative;
+	left: -4px;
+}
+
 .BMCHScriptEdit {
 	position: relative;
 
