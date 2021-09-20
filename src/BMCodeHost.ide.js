@@ -109,13 +109,13 @@ class MyClass extends TypescriptWidget {
 	@property(bindingTarget, bindingSource) value!: number;
 
 	// Declare widget events using the @twevent decorator
-    @twevent serviceInvoked!: TWEvent;
+    @twevent myServiceFinished!: TWEvent;
 
 	// Declare widget services using the @service decorator
     @service myService() {
 
 		// Trigger events by invoking them
-		this.serviceInvoked();
+		this.myServiceFinished();
     }
 
 	// Override any widget method needed; afterRender and renderHtml can be
