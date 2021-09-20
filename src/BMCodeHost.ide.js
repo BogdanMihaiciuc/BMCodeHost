@@ -1082,6 +1082,7 @@ class MyWidget extends TypescriptWidget {
 			delete properties.properties.DirectLink;
 			if (kind == 'class') {
 				delete properties.properties.Scope;
+				properties.properties.Title.isEditable = NO;
 			}
 		}
 
