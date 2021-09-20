@@ -1967,9 +1967,10 @@ class MyWidget extends TypescriptWidget {
 									// The following aspects are IDE aspects which are ignored at runtime
 									case 'isBindingSource':
 									case 'isBindingTarget':
-										hasBindingAspect = YES;
 									case 'dataShape':
 									case 'selectOptions':
+									case 'sourcePropertyName':
+									case 'baseTypeInfotableProperty':
 										baseProperty[aspect.name] = aspect.value;
 										break;
 									default:
@@ -1980,14 +1981,8 @@ class MyWidget extends TypescriptWidget {
 
 							// If a binding aspect is specified, don't use the default behaviour of setting
 							// properties as both binding sources and targets
-							if (!hasBindingAspect) {
-								baseProperty.isBindingSource = YES;
-								baseProperty.isBindingTarget = YES;
-							}
-							else {
-								baseProperty.isBindingSource = baseProperty.isBindingSource || NO;
-								baseProperty.isBindingTarget = baseProperty.isBindingTarget || NO;
-							}
+							baseProperty.isBindingSource = baseProperty.isBindingSource || NO;
+							baseProperty.isBindingTarget = baseProperty.isBindingTarget || NO;
 
 							properties.push(baseProperty);
 							break;
@@ -2061,6 +2056,14 @@ class MyWidget extends TypescriptWidget {
 					description: runtimeProperties[i].description || '',
 					selectOptions: runtimeProperties[i].selectOptions || undefined,
 				};
+
+				if (runtimeProperties[i].sourcePropertyName) {
+					propertyDefinition.sourcePropertyName = runtimeProperties[i].sourcePropertyName;
+				}
+
+				if (runtimeProperties[i].baseTypeInfotableProperty) {
+					propertyDefinition.baseTypeInfotableProperty = runtimeProperties[i].baseTypeInfotableProperty;
+				}
 				
 				if (dataShape) {
 					// If the data shape is defined, it may be in one of two forms:
@@ -2839,4 +2842,28 @@ TW.IDE.Widgets.BMTypescriptHost = function (kind) {
 TW.IDE.Widgets.BMTypescriptClassHost = function () {
 	// The Typescript class host is mostly identical to the Typescript host so it reuses most of its code.
 	TW.IDE.Widgets.BMTypescriptHost.call(this, 'class');
+
+
+	/**
+	 * Invoked by the platform to retrieve the path to the widget's icon as it appears in the widgets list.
+	 * @return <String>			The icon path.
+	 */
+	this.widgetIconUrl = function () {
+    	return  "../Common/extensions/BMCodeHost/ui/BMCodeHost/images/TypeScriptClass@2x.png";
+	}
+
+	/**
+	 * Invoked by the runtime when the widget has to be rendered. This function should provide the HTML contents of this widget.
+	 * @return <String>				The widget's content as an HTML string.
+	 */
+    this.renderHtml = function () {
+        var html = '<div class="widget-content BMCodeHost">\
+        				<div class="BMCodeHostContainer">\
+							<div class="BMCHTypescriptClassIcon"></div>\
+							<div class="InlineBlock BMCHScriptEdit" >' + this.getProperty("Title") + '.ts</div>\
+						</div>\
+					</div>';
+
+        return html;
+    };
 }
