@@ -19,6 +19,7 @@ Instead, the `BMCodeHost` extension aims to make Javascript logic (and TypeScrip
 To start adding custom logic to your mashup, add one of the two widgets to your mashup:
  - `Object`: Allows you to write logic in Javascript
  - `TypeScript Object`: Allows you to write logic in TypeScript
+ - `Typescript Class`: Allows you to write logic in TypeScript by extending a widget class.
 
 When you do so, the newly added widget will look like in the screenshot below; Click on the name of the object to open the editor.
 
@@ -29,6 +30,8 @@ The editor will provide a large area in which code can be written. Normally, thi
 For the `Stylesheet` widget, the CSS that you type will be added to the document stylesheets as soon as the widget is loaded at runtime. Note that those stylesheets will be removed when the mashup containing it is unloaded. If you want your CSS to be retained, consider placing the `Stylesheet` widget in your mashup's master.
 
 ## Interacting with the Mashup
+
+### Object and TypeScript Object
 
 To interact with the Mashup and other widgets, the `Object` and `TypeScript Object` widgets allow you define custom properties, services and events. When the editor is open for one of those widgets, it will containg a properties panel on the right hand side that shows the currently defined properties, events and services, allows you to manage them and allows you to create new ones.
 
@@ -41,7 +44,7 @@ To remove a previously created property, event or service, drag it outside of th
 
 ![Property Creation](readme/propertyCreation.png)
 
-### Working with properties
+#### Working with properties
 
 To access or set a property, use either the `self` or `this` keyword:
 ```js
@@ -53,7 +56,7 @@ console.log(self.myProperty);
 self.myProperty = "test"; 
 ```
 
-### Working with services
+#### Working with services
 
 Services are really just regular Javascript functions that take no parameters but can be invoked via bindings from other widgets. After you define a service in the properties panel, you will also need to implement it in your code. You can also invoke services from within your own code just like regular methods as well.
 
@@ -71,7 +74,7 @@ self.myService();
 
 ```
 
-### Working with events
+#### Working with events
 
 Events can be triggered and bound to execute other services either defined on other widgets or services that run on the Thingworx server. After an event has been defined in the properties panel, you can trigger it from your code by using the `dispatchEvent` method on `self` or `this`:
 ```js
@@ -79,7 +82,7 @@ Events can be triggered and bound to execute other services either defined on ot
 self.dispatchEvent("myEvent")
 ```
 
-### Working with other widgets
+#### Working with other widgets
 
 A key feature of Code Host is that it makes it easy to also directly reference other widgets on the mashup and invoke their methods. A `$w` function is available for use in your code that can retrieve a reference to another widget. Widgets are looked up based on their `DisplayName` property.
 
@@ -94,11 +97,50 @@ myTextBox.setProperty("Text", self.myProperty);
 
 Note that the code is evaluated as soon as the object is created, so using `$w` outside of a function can fail because the referenced widget has not yet been created. To avoid this, consider moving initialization code in a service that is invoked via the `MashupLaoded` event.
 
+### TypeScript Class
+
+The TypeScript class makes use of the technologies in [ThingworxDemoWebpackWidget](https://github.com/ptc-iot-sharing/ThingworxDemoWebpackWidget) and allows you to create a widget subclass that can interact with the mashup in the same way as any widget extension.
+
+Thus, to add properties, events and services you can just decorate your regular class members with the relevant decorator. The example code that any `TypeScript Class` widget starts out with provides examples of how to do this:
+```ts
+
+// This decorator marks the class as the widget class to use
+@TWWidgetDefinition
+class MyWidget extends TypescriptWidget {
+
+    // This decorator makes the given class member
+    // into a widget property.
+    @property myProperty?: string;
+
+    // This decorator makes the given class member
+    // into a widget event. Note that the TWEvent type
+    // is required for these properties
+    @twevent myEvent!: TWEvent;
+
+    // This decorator makes the given class member into
+    // widget service
+    @service myService() {
+
+      // The $w, $b and $j functions are no longer available
+      // when using the TypeScript Class widget
+      // Instead, you can retrieve widget instances using
+      // the getWidget method
+      const myWidget = this.getWidget('MyWidget');
+    }
+
+    beforeDestroy() {
+
+    }
+}
+```
+
 ## Global vs Local scope
 
 The `Object` and `TypeScript Object` widgets have a property called `Scope` that can be set to either `"Global"` or `"Local"`. By default, all newly created objects are set to local mode, where their code executes within the mashup scope and has access to properties, events and services, but any variables or functions that you define will not be directly visible outside of that script.
 
 It is possible to set this Scope to Global instead, which will cause the script to run in the global scope. In global scope, you will not be able to define any properties, events and services, the `$w` function will not be available to retrieve reference to widgets, but any classes, variables and functions that you define will be available globally for other scripts as well. Note that these global scripts still need to be evaluated in order for their definitions to be available elsewhere, so if an object contains a definition that you want available right away consider moving it into a mashup that loads early, such as a master.
+
+The Global scope is not available for `TypeScript Class` widgets. You can explicitly make your widget class global by adding to the `window` object.
 
 # Index
 

@@ -1,4 +1,4 @@
-////<reference path="./types.ts"/>
+///<reference path="../../BMCoreUI/build/ui/BMCoreUI/BMCoreUI.d.ts"/>
 
 var CHFunctionRegex = /([^ \t\r\n\f+\-=.<>?:()[\]*\\\/!%]+)\s*\.(\S+)\s*=\s*function\s*[^()]*\s*\(.*\)|function\s*(\S+)\s*\(.*\)|(\S+)\s*:\s*function\s*[^()]*\s*\(.*\)/g;
 var CHMarkRegex = /\s*\/\/\s*MARK:\s*(.*)/g;
@@ -9,63 +9,6 @@ if (!window.BMMaterialFontsLoaded) {
 	
 	$('head').append('<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">');
 }
-
-function BMCodeHostCoreMonacoLoader() {
-	if (!window.require) {
-		return window.setTimeout(BMCodeHostCoreMonacoLoader, 100);
-	}
-	
-	var extRoot = "/Thingworx/Common/extensions/MonacoScriptEditor/ui/monacoScriptEditor";
-	
-	require.config({
-	    paths: {
-	        "vs": extRoot + "/vs"
-	    }
-	});
-		    
-	require(["vs/editor/editor.main"], function () {});
-}
-
-
-setTimeout(function () {
-	let twStudio = document.querySelector('#twStudioBody');
-	if (twStudio) {
-		twStudio.style.backgroundColor = 'white';
-		let pageWindow = {node: twStudio, get frame() {return BMRectMake(0, 0, window.innerWidth, window.innerHeight)}};
-		BMWindow.registerShowcaseElement(pageWindow);
-
-		let _enterShowcase = BMWindow.enterShowcase;
-		BMWindow.enterShowcase = function () {
-			_enterShowcase.apply(this, arguments);
-
-			BMAnimateWithBlock(() => {
-				BMAnimationContextEnableWebAnimations();
-		
-				let header = document.getElementById('twStudioHeader');
-				let headerController = BMAnimationContextGetCurrent().controllerForObject(header, {node: header});
-				headerController.registerBuiltInProperty('translateY', {withValue: -header.offsetHeight + 'px'});
-			}, {duration: 300, easing: 'easeInOutQuad'});
-		}
-		
-
-		let _exitShowcase = BMWindow.exitShowcase;
-		BMWindow.exitShowcase = function () {
-			_exitShowcase.apply(this, arguments);
-
-			BMAnimateWithBlock(() => {
-				BMAnimationContextEnableWebAnimations();
-		
-				let header = document.getElementById('twStudioHeader');
-				let headerController = BMAnimationContextGetCurrent().controllerForObject(header, {node: header});
-				headerController.registerBuiltInProperty('translateY', {withValue: '0px'});
-			}, {duration: 300, easing: 'easeInOutQuad'});
-		}
-	}
-	else {
-		/*let pageWindow = {node: document.querySelector('.aurelia-main'), get frame() {return BMRectMake(0, 0, window.innerWidth, window.innerHeight)}};
-		BMWindow.registerShowcaseElement(pageWindow);*/
-	}
-}, 500);
 
 function BMCHLoadSnippets() {
 	let snippets = [];
@@ -101,6 +44,7 @@ var BMCHRootES6Library; // <String, nullable>
 var BMCHRootjQueryLibrary; // <String, nullable>
 var BMCHCoreUILibrary; // <String, nullable>
 var BMCHTWXLibrary; // <String, nullable>
+var BMCHTWXWidgetLibrary; // <String, nullable>
 
 async function BMCodeHostLoadRootLibrariesWithCompletionHandler(handler) {
 	let ES6Response = await fetch('/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/lib.es6.d.ts', {credentials: 'include'});
@@ -122,20 +66,77 @@ async function BMCodeHostLoadRootLibrariesWithCompletionHandler(handler) {
 	let TWXResponse = await fetch('/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/Thingworx.d.ts', {credentials: 'include'});
 	BMCHTWXLibrary = await TWXResponse.text();
 
+	let widgetResponse = await fetch('/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/TWRuntimeWidget.d.ts', {credentials: 'include'});
+	BMCHTWXWidgetLibrary = await widgetResponse.text();
+
 	return handler ? handler() : void 0;
 }
 
 var _BMCodeHostLanguageValues = {};
 
-TW.IDE.Widgets.BMCodeHost = function (language) {
+/**
+ * 
+ * @param {string} language 		Defaults to `.Javascript`. The language to be used.
+ * @param {string} kind 			Defaults to `object`. Must be `object` or `class`. The kind of entity to be edited.
+ * @returns 
+ */
+TW.IDE.Widgets.BMCodeHost = function (language, kind) {
+	
+	// Default argument values
+	language = language || BMCodeEditorLanguage.Javascript;
+	kind = kind || 'object';
 
-	_BMCodeHostLanguageValues[BMCodeEditorLanguage.Javascript] = {
+	// Property view is only available on ts and js objects
+	const hasPropertiesView = language !== BMCodeEditorLanguage.CSS && kind != 'class';
+
+	let supportsClass = YES;
+
+	// Default value overrides based on the specified kind
+	const _BMCodeHostKindValues = {
+		object: {
+			title: 'object',
+			code: ' // Code to be executed at runtime \n',
+		},
+		class: {
+			name: 'Typescript Class',
+			title: 'MyClass',
+			description: 'Represents a typescript widget class that can be implemented.',
+			code: `// Class to be used at runtime
+
+@TWWidgetDefinition
+class MyClass extends TypescriptWidget {
+	// Declare widget properties using the @property decorator
+    @property(bindingTarget) label!: STRING;
+
+	@property(bindingTarget, bindingSource) value!: number;
+
+	// Declare widget events using the @twevent decorator
+    @twevent myServiceFinished!: TWEvent;
+
+	// Declare widget services using the @service decorator
+    @service myService() {
+
+		// Trigger events by invoking them
+		this.myServiceFinished();
+    }
+
+	// Override any widget method needed; afterRender and renderHtml can be
+	// overriden to display this widget at runtime
+    beforeDestroy() {
+
+    }
+}`,
+		}
+	};
+
+	// Default values based on the language
+	_BMCodeHostLanguageValues[BMCodeEditorLanguage.Javascript] = BMCopyProperties({
 		name: 'Object',
 		description: 'Represents a javascript object stub that can be implemented on the fly.',
 		title: 'object',
 		code: ' // Code to be executed at runtime \n',
 		class: ''
-	}
+	}, _BMCodeHostKindValues[kind]);
 	
 	_BMCodeHostLanguageValues[BMCodeEditorLanguage.CSS] = {
 		name: 'Stylesheet',
@@ -146,15 +147,13 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		class: 'BMCHCSSCodeEditor'
 	}
 	
-	_BMCodeHostLanguageValues[BMCodeEditorLanguage.Typescript] = {
+	_BMCodeHostLanguageValues[BMCodeEditorLanguage.Typescript] = BMCopyProperties({
 		name: 'TypeScript Object',
 		description: 'Represents a typescript object stub that can be implemented on the fly.',
 		title: 'object',
 		code: ' // Code to be executed at runtime \n',
 		class: ''
-	}
-	
-	language = language || BMCodeEditorLanguage.Javascript;
+	}, _BMCodeHostKindValues[kind]);
 	
 	var extension = language === BMCodeEditorLanguage.CSS ? '.css' : (BMCodeEditorLanguage.Typescript === language ? '.ts' : '.js');
 	
@@ -172,12 +171,20 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	var properties = [];
 	var services = [];
 	var events = [];
+
+	/**
+	 * For typescript classes, this is the last extracted class definition.
+	 */
+	let extractedClassDefinition = {};
 	
 	var functions = [];
 	var filteredFunctions = [];
 	var oldFunctions;
 	var newFunctions;
 	
+	/**
+	 * The data set for the navigation sidebar.
+	 */
 	var sidebarDataSet = new (function () {
 
 		this.numberOfSections = function () {
@@ -328,10 +335,55 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		}
 
 		if (useAST) {
-			let worker = await monaco.languages.typescript.getLanguageWorker(language);
+			let worker;
+			// The method to obtain the typescript worker depends on the monaco editor extension version
+			if (monaco.languages.typescript.getLanguageWorker) {
+				worker = await monaco.languages.typescript.getLanguageWorker(language);
+			}
+			else {
+				switch (language) {
+					case BMCodeEditorLanguage.Javascript:
+						worker = await monaco.languages.typescript.getJavaScriptWorker();
+						break;
+					case BMCodeEditorLanguage.Typescript:
+						worker = await monaco.languages.typescript.getTypeScriptWorker();
+						break;
+				}
+			}
 			let client = await worker(codeEditor._monaco.getModel().uri);
 
 			let outlineTokens = await client.getOutline(codeEditor._monaco.getModel().uri.toString());
+
+			if (kind == 'class') {
+				if (!client.getWidgetClassInformation) {
+					supportsClass = NO;
+
+					// Class host requires a recent version of monaco
+					const confirmation = BMConfirmationPopup.confirmationPopupWithTitle('Monaco Editor Required', {text: "A newer version of the MonacoEditorTWX extension is required to use this widget.\nClick \"Download\" to navigate to that extension's GitHub page.", positiveActionText: 'Download', negativeActionText: 'Cancel'});
+					confirmation.confirm().then(result => {
+						if (result == BMConfirmationPopupResult.Confirmed) {
+							window.open('https://github.com/ptc-iot-sharing/MonacoEditorTWX', '_blank');
+						}
+					});
+
+					if (codeWindow) {
+						codeWindow.dismissAnimated(YES);
+					}
+
+					return;
+				}
+
+				// In class mode, use the client to obtain information about the decorated fields of the widget class
+				let classDefinition = await client.getWidgetClassInformation(codeEditor._monaco.getModel().uri.toString());
+				if (classDefinition.name) {
+					if (this.getProperty('Title') != classDefinition.name) {
+						this.setProperty('Title', classDefinition.name);
+						codeWindow.node.querySelector('.BMCHScriptTitle').innerText = classDefinition.name;
+						codeWindow.title = classDefinition.name;
+					}
+				}
+				extractedClassDefinition = classDefinition;
+			}
 
 			function indentHTMLWithIndentAmount(indentation) {
 				let indents = '';
@@ -368,7 +420,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		var match;
 		for (var i = 0; i < lines.length; i++) {
 			let line = lines[i];
-			// For JS and TS resolve import statements
+			// For JS and TS resolve import statements and regions
 			if (language !== BMCodeEditorLanguage.CSS) {
 				if (line.indexOf('//#import') == 0) {
 					if (line.indexOf('//#import type ') == 0) {
@@ -392,6 +444,11 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 						else {
 							currentImports.push({type: 'widget', widget: components[2], package: components[4]});
 						}
+					}
+					else if (line.indexOf('//#import shape ') == 0) {
+						// Import shape statements import data shapes as interfaces
+						let components = line.trim().split(' ');
+						currentImports.push({type: 'shape', name: components[2]});
 					}
 					else {
 						// Import statements can either be: 
@@ -547,7 +604,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	 * @param targetArray <[Object]>		An array to which the exportable widgets will be added.
 	 */
 	function findExportsInWidget(rootWidget, targetArray) {
-		if (rootWidget.Properties.Type == 'BMCodeHost' || rootWidget.Properties.Type == 'BMTypescriptHost') {
+		if (rootWidget.Properties.Type == 'BMCodeHost' || rootWidget.Properties.Type == 'BMTypescriptHost' || rootWidget.properties.Type == 'BMTypescriptClassHost') {
 			targetArray.push({
 				title: rootWidget.Properties.Title,
 				exports: rootWidget.Properties.Exports,
@@ -677,6 +734,75 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 
 					updatedImports.push(importAction.import);
 				}
+				else if (importAction.import.type == 'shape') {
+					importAction.import.libraries = [];
+
+					const metadata = await fetch(`/Thingworx/DataShapes/${importAction.import.name}`, {headers: {
+						'X-XSRF-TOKEN': 'TWX-XSRF-TOKEN-VALUE',
+						'Accept': 'application/json',
+						'Content-Type': 'application/json'
+					}});
+
+					const body = await metadata.json();
+
+					const baseTypeOfPropertyDefinition = (definition) => {
+						let baseType = definition.baseType;
+
+						if (baseType == 'JSON') return 'any';
+
+						if (baseType == 'INFOTABLE' && definition.aspects.dataShape) {
+							return `INFOTABLE<${definition.aspects.dataShape.replace(/\./g, '_')}>`;
+						}
+
+						if (baseType == 'THINGNAME') {
+							if (definition.aspects.thingShape && definition.aspects.thingTemplate) {
+								return `THIGNAME<'${definition.aspects.thingTemplate}','${definition.aspects.thingShape}'>`;
+							}
+							else if (definition.aspects.thingTemplate) {
+								return `THIGNAME<'${definition.aspects.thingTemplate}'>`;
+							}
+							else if (definition.aspects.thingShape) {
+								return `THIGNAME<undefined,'${definition.aspects.thingShape}'>`;
+							}
+						}
+
+						return baseType;
+					}
+
+					const sanitiziedName = body.name.replace(/\./g, '_');
+					const nameComponents = body.name.split('.');
+					
+					let declaration = '';
+
+					for (let i = 0; i < nameComponents.length; i++) {
+						const nameComponent = nameComponents[i];
+						if (i == nameComponents.length - 1) {
+							// Declare an interface using the last name component
+							declaration += `interface ${nameComponent} {\n\n`;
+	
+							for (const property of Object.values(body.fieldDefinitions)) {
+								declaration += `
+									/**
+									 * ${property.description}
+									 */
+									${property.name}: ${baseTypeOfPropertyDefinition(property)};
+								`;
+							}
+						}
+						else {
+							// All other name components get mapped to namespaces
+							declaration += `declare namespace ${nameComponent} {\n`;
+						}
+
+					}
+
+					for (let i = 0; i < nameComponents.length; i++) {
+						declaration += '\n}\n';
+					}
+
+					importAction.import.libraries.push({name: 'DataShapes_' + sanitiziedName, code: declaration});
+					updatedImports.push(importAction.import);
+				}
 				else if (importAction.import.type == 'URL') {
 					importAction.import.libraries = [];
 
@@ -711,7 +837,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 						while (widgets.length) {
 							let widget = widgets[0];
 
-							if (widget.properties.Type == 'BMCodeHost' || widget.properties.Type == 'BMTypescriptHost') {
+							if (widget.properties.Type == 'BMCodeHost' || widget.properties.Type == 'BMTypescriptHost' || widget.properties.Type == 'BMTypescriptClassHost') {
 								if (widget.properties.Title == importAction.import.object) {
 									if (widget.properties.Scope === 'global') {
 										importAction.import.code = widget.properties.Code;
@@ -834,6 +960,13 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	 * Contains the user defined services.
 	 */
 	this.scriptServices = { // <Object>
+	};
+
+	/**
+	 * Contains the user defined properties.
+	 */
+	this.scriptProperties = { // <Object>
+
 	};
 
 
@@ -961,6 +1094,10 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		}
 		else {
 			delete properties.properties.DirectLink;
+			if (kind == 'class') {
+				delete properties.properties.Scope;
+				properties.properties.Title.isEditable = NO;
+			}
 		}
 
 		if (language == BMCodeEditorLanguage.Typescript) {
@@ -970,6 +1107,8 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 				isVisible: NO
 			}
 		}
+
+		BMCopyProperties(properties.properties, this.scriptProperties);
         
         return properties;
     };
@@ -1031,7 +1170,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	this.afterLoad = function() {
 		if (language !== BMCodeEditorLanguage.CSS) {
 			this.loadProperties();
-			this.updateRuntimeProperties();
+			this.updateRuntimeProperties(YES);
 		}
 	}
 	
@@ -1041,7 +1180,10 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	 * @return <Boolean, nullable>		Defaults to NO. Should be YES if the widget should be redrawn after this property is updated, NO otherwise.
 	 */
 	this.afterSetProperty = function (property, value) {
-		if (property == 'Title') return YES;
+		if (property == 'Title') {
+			self.jqElement.find('.BMCHScriptEdit').text(value + extension);
+			self.setProperty('DisplayName', value);
+		}
 		if (property == 'Width') return YES;
 		if (property == 'Height') return YES;
 		if (property == 'Scope' && codeWindow) {
@@ -1097,53 +1239,6 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			}));
 		}
 
-		var toolbar = this.jqElement.closest('#mashup-ide-workspace-pane').find("#mashup-toolbar");
-		var scriptButton = toolbar.find(".script-button");
-
-		if (scriptButton.length == 0) {
-			var groups = toolbar.find('.btn-group');
-
-			groups.eq(groups.length - 1).after($('<div class="btn-group script-button">\
-				<button type="button" class="btn btn-mini" title="Enter Showcase">\
-					<i class="twicon-MashupScript" style="background-image: url(/Thingworx/Common/extensions/BMCodeHost/ui/BMCodeHost/images/Object@2x.png); background-size: 16px 16px;"></i>\
-				</button>\
-				</div>'));
-
-
-			scriptButton = toolbar.find(".script-button");
-
-			scriptButton.click(function () {
-				return BMWindow.enterShowcase();
-
-				document.body.style.backgroundColor = 'gray';
-				document.querySelector('#tab-panel-mashup-ide-view').style.display = 'none';
-
-				let center = BMWindowMakeWithFrame(BMRectMake(256, 0, document.body.offsetWidth - 512, document.body.offsetHeight - 256), {toolbar: YES, modal: NO});
-				center.content.appendChild(document.querySelector("#flex-workspace"));
-				center.content.classList.add('BMWindowMashupContent');
-				center.node.classList.add('BMWindowMashup');
-
-				let bottom = BMToolWindow.toolWindowWithFrame(BMRectMake(256, document.body.offsetHeight - 256, document.body.offsetWidth - 512, 256), {forWindow: center});
-				bottom.content.appendChild(document.querySelector("#model-window"));
-				bottom.content.classList.add('BMWindowMashupContent');
-				//bottom.bringToFrontAnimated(YES);
-
-				let leftWindow = BMToolWindow.toolWindowWithFrame(BMRectMake(0, 0, 256, document.body.offsetHeight), {forWindow: center});
-				leftWindow.content.appendChild(document.querySelector("#leftDock"));
-				leftWindow.content.classList.add('BMWindowMashupContent');
-				//leftWindow.bringToFrontAnimated(YES);
-
-				let rightWindow = BMToolWindow.toolWindowWithFrame(BMRectMake(document.body.offsetWidth - 256, 0, 256, document.body.offsetHeight), {forWindow: center});
-				rightWindow.content.appendChild(document.querySelector("#rightDock"));
-				rightWindow.content.classList.add('BMWindowMashupContent');
-				rightWindow.content.classList.add('BMWindowMashupPropertyContent');
-				//rightWindow.bringToFrontAnimated(YES);
-
-				center.bringToFrontAnimated(YES);
-			});
-
-		}
-
 	}
 
 	// Represents the mashup's tab element
@@ -1165,9 +1260,15 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			return;
 		}
 
-		if (language == BMCodeEditorLanguage.Typescript && !window.monaco) {
-			// Typescript requires monaco, fail if it isn't present
-			return alert('Typescript requires the Monaco extension.');
+		if (!window.monaco) {
+			// BMCodeHost requires monaco, fail if it isn't present
+			const confirmation = BMConfirmationPopup.confirmationPopupWithTitle('Monaco Editor Required', {text: "The MonacoEditorTWX extension is required to edit this widget.\nClick \"Download\" to navigate to that extension's GitHub page.", positiveActionText: 'Download', negativeActionText: 'Cancel'});
+			confirmation.confirm().then(result => {
+				if (result == BMConfirmationPopupResult.Confirmed) {
+					window.open('https://github.com/ptc-iot-sharing/MonacoEditorTWX', '_blank');
+				}
+			});
+			return;
 		}
 		
 		var windowFrame = BMRectMakeWithOrigin(BMPointMake(
@@ -1195,7 +1296,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			<div class="BMCHContentWrapper"></div>
 		</div>
 		<div class="CHCodeContainer BMCHCodeEditor` + (language == BMCodeEditorLanguage.CSS ? ` BMCHCSSCodeEditor` : ``) + `">
-			<div class="BMCHContentWrapper"></div>` + (language !== BMCodeEditorLanguage.CSS ? `</div>
+			<div class="BMCHContentWrapper"></div>` + (hasPropertiesView ? `</div>
 		<div class="BMCHPropertiesContainer BMCHScrollbar">
 			<div class="BMCHContentWrapper"></div>
 		</div>` : `</div>`);
@@ -1221,7 +1322,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 
 
 		// Only javascript and typescript support properties, services and events
-		if (language !== BMCodeEditorLanguage.CSS) {		
+		if (hasPropertiesView) {		
 			// Create and initialize the property collection
 			propertiesCollection = BMCollectionView.collectionViewForNode(codeWindow.content.querySelectorAll('.BMCHPropertiesContainer > .BMCHContentWrapper')[0]);
 			propertiesCollection.layout = new BMCollectionViewTableLayout();
@@ -1231,8 +1332,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			propertiesCollection.layout.sectionInsets = BMInsetMake(0, 0, 0, 16);
 			propertiesCollection.delegate = self;
 
-			if (self.getProperty('Scope') == 'global') {
-				//codeWindow.content.querySelectorAll('.BMCHPropertiesContainer')[0].style.display = 'none';
+			if (self.getProperty('Scope') == 'global' || kind == 'class') {
 				codeWindow.content.querySelectorAll('.BMCHCodeEditor')[0].classList.add('BMCHCSSCodeEditor');
 			}
 		}
@@ -1258,7 +1358,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		sidebarCollection.width.equalTo(sidebar.width).isActive = YES;
 		sidebarCollection.bottom.equalTo(sidebar.bottom).isActive = YES;
 
-		let propertiesView = language !== BMCodeEditorLanguage.CSS ? BMView.viewForNode(codeWindow.content.querySelectorAll('.BMCHPropertiesContainer')[0]) : undefined;
+		let propertiesView = hasPropertiesView ? BMView.viewForNode(codeWindow.content.querySelectorAll('.BMCHPropertiesContainer')[0]) : undefined;
 		if (propertiesView) codeWindow.addSubview(propertiesView);
 
 		// Create the sidebar search bar
@@ -1285,7 +1385,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		codeWindow.addSubview(codeView);
 		codeView.leading.equalTo(sidebar.trailing, {plus: 1}).isActive = YES;
 		codeView.top.equalTo(codeWindow.top).isActive = YES;
-		codeView.trailing.equalTo(language !== BMCodeEditorLanguage.CSS ? propertiesView.leading : codeWindow.trailing).isActive = YES;
+		codeView.trailing.equalTo(hasPropertiesView ? propertiesView.leading : codeWindow.trailing).isActive = YES;
 		codeView.bottom.equalTo(codeWindow.bottom).isActive = YES;
 		codeView.width.greaterThanOrEqualTo(416).isActive = YES;
 
@@ -1322,17 +1422,33 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 
 		
 		// Create and initialize the script title text box
-		var title = document.createElement('input');
-		title.type = 'text';
-		title.className = 'BMCHInput BMCHScriptTitle';
-		title.value = self.getProperty('Title');
-		$(title).on('keypress', function (event) {
-			var keyCode = event.which || event.keyCode;
+		var title;
+
+		if (kind != 'class') {
+			title = document.createElement('input');
+			title.type = 'text';
+			title.className = 'BMCHInput BMCHScriptTitle';
+			title.value = self.getProperty('Title');
+			$(title).on('keypress', function (event) {
+				var keyCode = event.which || event.keyCode;
+				
+				if (keyCode == 13) {
+					codeEditor.acquireFocus();
+				}
+			});
 			
-			if (keyCode == 13) {
-				codeEditor.acquireFocus();
-			}
-		});
+			title.addEventListener('change', function (event) {
+				self.setProperty('Title', title.value);
+				self.jqElement.find('.ScriptEdit').text(title.value + extension);
+				codeWindow.title = title.value;
+			});
+		}
+		else {
+			title = document.createElement('div');
+			title.className = 'BMCHReadonlyScriptTitle BMCHScriptTitle';
+			title.innerText = self.getProperty('Title');
+		}
+
 		codeWindow.toolbar.appendChild(title);
 
 		let needsResize = NO;
@@ -1356,12 +1472,6 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 				easing: 'easeOutQuad'
 			});*/
 		}
-		
-		title.addEventListener('change', function (event) {
-			self.setProperty('Title', title.value);
-			self.jqElement.find('.ScriptEdit').text(title.value + extension);
-			codeWindow.title = title.value;
-		});
 		
 		// Create and initialize the save button
 		codeWindow.BMCHSaveButton = self.createToolbarButtonWithClass('BMCHSaveButton', {content: '<i class="material-icons">&#xE161;</i>', tooltip: 'Save - ⌘S', action: function (event) {
@@ -1442,11 +1552,11 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 					BMCodeHostLoadRootLibrariesWithCompletionHandler(function () {
 						if (!codeEditor) return;
 						
-						codeEditor.setBuiltinES6Library(BMCHRootES6Library, {jQueryLibrary: BMCHRootjQueryLibrary, additionalLibraries: [BMCHCoreUILibrary, BMCHTWXLibrary]});
+						codeEditor.setBuiltinES6Library(BMCHRootES6Library, {jQueryLibrary: BMCHRootjQueryLibrary, additionalLibraries: [BMCHCoreUILibrary, BMCHTWXLibrary, BMCHTWXWidgetLibrary]});
 					});
 				}
 				else {
-					codeEditor.setBuiltinES6Library(BMCHRootES6Library, {jQueryLibrary: BMCHRootjQueryLibrary, additionalLibraries: [BMCHCoreUILibrary, BMCHTWXLibrary]});
+					codeEditor.setBuiltinES6Library(BMCHRootES6Library, {jQueryLibrary: BMCHRootjQueryLibrary, additionalLibraries: [BMCHCoreUILibrary, BMCHTWXLibrary, BMCHTWXWidgetLibrary]});
 				}
 
 				if (importsDTS) {
@@ -1464,7 +1574,9 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			sidebarCollection.dataSet = sidebarDataSet;
 			
 			if (language !== BMCodeEditorLanguage.CSS) {
-				propertiesCollection.dataSet = self;
+				if (hasPropertiesView) {
+					propertiesCollection.dataSet = self;
+				}
 				self.buildAutocompleteDefinition();
 			}
 			
@@ -1475,6 +1587,10 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		title.style.left = codeView.frame.origin.x + 4 + 'px';
 		
 	};
+
+	this.windowShouldEnterShowcase = function () {
+		return NO;
+	}
 
 	this.windowWillMinimize = function () {
 		if (!TW.minimizeStripCreated) {
@@ -1588,9 +1704,16 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		if (language !== BMCodeEditorLanguage.CSS) this.updateRuntimeProperties();
 
 		// Switch back to this editor's mashup before saving
-		tab.click();
+		if (tab) {
+			tab.click();
+		}
 		
+		// Triggers save in old composer, this will have no effect in new composer
 		$('.tab-panel-selected').find('.btn-save-continue-edit.btn.btn-primary').click();
+
+		// Triggers save in new composer, this will have no effect in old compoesr
+		$('.tw-page-header').find('button[data-action="save"]').click();
+
 		codeEditor.acquireFocus();
 	};
 	
@@ -1600,11 +1723,26 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	this.openBindings = function () {
 		if (language !== BMCodeEditorLanguage.CSS) self.updateRuntimeProperties();
 
+		if (codeEditor) {
+			BMWindow.minimizeAllAnimated();
+		}
+
 		// Switch back to this editor's mashup and select the widget before opening the bindings
-		tab.click();
+		if (tab) {
+			// In new composer, widgets are destroyed when switching tabs, therefore it's not possible
+			// to trigger this from a different mashup
+			tab.click();
+		}
 		self.jqElement.click();
 		
+		// Triggers open bindings in old composer, this will have no effect in new composer
 		self.jqElement.closest('#mashup-ide').find('#widget-properties-tabs').find('#open-configure-dialog').click();
+
+		// In new composer a delay is required, because selection is asynchronous
+		setTimeout(() => {
+			// Triggers open bindings in new composer, this will have no effect in old composer
+			self.jqElement.closest('#tab-panel-mashup-ide-view').find('#widget-properties-title').find('.tw-icon-configure-bindings-alt').click();
+		}, 16);
 	};
 	
 	/**
@@ -1613,10 +1751,12 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	 */
 	this.openMashup = function () {
 
-		// Switch back to this editor's mashup before opening
-		tab.click();
+		// In old composer, switch back to this editor's mashup before opening
+		if (tab) {
+			tab.click();
+		}
 
-		var mashupName = $('.tab-navigate-command.entity-tab.active.selected').find('.tab-title').text();
+		var mashupName = $('.tab-navigate-command.entity-tab.active.selected').find('.tab-title').text() || $('.entity-title').text();
 		window.open('/Thingworx/Mashups/' + mashupName, '_blank');
 	};
 
@@ -1642,17 +1782,9 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		
 		if (codeWindow.isFullScreen) {
 			codeWindow.exitFullScreenAnimated(YES, {completionHandler: completeCallback});
-			/*codeWindow.BMCHCloseButton.classList.remove('BMCHFullScreen');
-			codeWindow.BMCHSaveButton.classList.remove('BMCHFullScreen');
-			codeWindow.BMCHBindingsButton.classList.remove('BMCHFullScreen');
-			codeWindow.BMCHViewButton.classList.remove('BMCHFullScreen');*/
 		}
 		else {
 			codeWindow.enterFullScreenAnimated(YES, {completionHandler: completeCallback});
-			/*codeWindow.BMCHCloseButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHSaveButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHBindingsButton.classList.add('BMCHFullScreen');
-			codeWindow.BMCHViewButton.classList.add('BMCHFullScreen');*/
 		}
 		
 		self.setProperty('FullScreen', codeWindow.isFullScreen);
@@ -1662,7 +1794,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	this.windowDidClose = function (window) {
 		window.BMCHCodeEditor.release();
 		window.release();
-		if (language !== BMCodeEditorLanguage.CSS) propertiesCollection.release();
+		if (hasPropertiesView) propertiesCollection.release();
 		sidebarCollection.release();
 		
 		propertiesCollection = undefined;
@@ -1721,25 +1853,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 
 			let activeElement = document.activeElement;
 			
-			if (code == 222) {
-				eventHandled = YES;
-				self.isTabbing = YES;
-				self.tabToNextCodeHost();
-			}
-			
-			if (code == 186) {
-				eventHandled = YES;
-				self.isTabbing = YES;
-				self.tabToPreviousCodeHost();
-			}
-			
-			if (self.isTabbing) {
-				event.stopPropagation();
-				event.preventDefault();
-				return;
-			}
-			
-			if (language !== BMCodeEditorLanguage.CSS) {
+			if (hasPropertiesView) {
 				if (code == 49 && event.shiftKey) {
 					eventHandled = YES;
 					self.addPropertyOfType(0);
@@ -1780,31 +1894,6 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			}
 			
 		});
-		
-		$(window).on('keyup.BMCodeHost', function (event) {
-			if (!self.isTabbing) return;
-			
-			var code = event.which || event.keyCode;
-			
-			if (code == 17 || code == 91 || code == 18 || code == 93) {
-				self.isTabbing = NO;
-				self.commitCmdTab();
-				event.stopPropagation();
-				event.preventDefault();
-			}
-		});
-		
-		$(window).on('resize.BMCodeHost', function (event) {
-			/*codeWindow.frame = BMRectMakeWithOrigin(BMPointMake(
-					window.innerWidth * .05 | 0,
-					window.innerHeight * .05 | 0
-				), {size: BMSizeMake(
-					window.innerWidth * .9 | 0,
-					window.innerHeight * .9 | 0
-				)});
-				
-			codeEditor.resized();*/
-		});
 	};
 	
 	/**
@@ -1822,286 +1911,6 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 			codeWindow.dismissAnimated(NO);
 		}
 	}
-	
-/*
-****************************************************************************************************************************************************************
-																Cmd-Tab Controller
-****************************************************************************************************************************************************************
-*/
-
-	/**
-	 * The cmd tab controller manages switching between scripts and styles using keyboard shortcuts.
-	 * Despite its name, the controller itself does not actually register any keyboard shortcuts, but instead is responsible for
-	 * creating the on-screen list of code hosts, navigating between them and switching to a different code host.
-	 *
-	 * Its methods should generally be invoked in response to keyboard shortcuts.
-	 *
-	 * Constructing a cmd tab controller will cause its window to automatically become visible on the screen.
-	 *
-	 * @return <BMCHCmdTabController>		A cmd tab controller.
-	 */
-	function BMCHCmdTabController () { // <constructor>
-		
-		// Retain the list of available code hosts
-		this.codeHosts = codeHosts;
-	
-		// Build the window that will show the available code hosts
-		var cmdTabFrame = BMRectMake(0, 0, 384, codeHosts.length * 44);
-		cmdTabFrame.center = BMPointMake(window.innerWidth / 2, window.innerHeight / 2);
-	
-		var cmdTabWindow = new BMWindow().initWithFrame(cmdTabFrame, {toolbar: NO});
-		cmdTabWindow.delegate = this;
-		
-		// Create the contents, which is an empty container for a collection view
-		var content = window.document.createElement('div');
-		content.className = 'BMCHCmdTabView';
-		
-		cmdTabWindow.content.appendChild(content);
-		
-		// Create the collection view that manages the on-screen list of code hosts
-		var collectionView = BMCollectionViewMakeWithContainer($(content));
-		
-		this.collectionView = collectionView;
-		collectionView.layout = new BMCollectionViewTableLayout();
-		collectionView.layout.rowHeight = 44;
-		collectionView.delegate = this;
-		
-		// Automatically select the current code host
-		codeHosts.forEach(function (codeHost, index) {
-			if (codeHost.widget == self) collectionView.selectedIndexPaths = [BMIndexPathMakeWithRow(index, {section: 0, forObject: codeHost})];
-		});
-		
-		// Make the window visible
-		var controller = this;
-		cmdTabWindow.bringToFrontAnimated(YES, {completionHandler: function () {
-			collectionView.resized();
-		}});
-		setTimeout(function () {
-			collectionView.dataSet = controller;
-			document.activeElement.blur();
-		}, 0);
-		
-		/**
-		 * Should be invoked to dismiss this cmd tab controller.
-		 * Invoking this method does not cause the currently selected code host to become active.
-		 */
-		this.dismiss = function () {
-			cmdTabWindow.dismissAnimated(YES);
-		};
-		
-	}
-	
-	BMCHCmdTabController.prototype = {
-		// @override - BMCollectionViewDataSet
-		numberOfSections: function () { return 1; },
-		// @override - BMCollectionViewDataSet
-		numberOfObjectsInSectionAtIndex: function (index) { return this.codeHosts.length; },
-		// @override - BMCollectionViewDataSet
-		indexPathForObjectAtRow: function (row, args) {
-			return BMIndexPathMakeWithRow(row, {section: 0, forObject: this.codeHosts[row]});
-		},
-		// @override - BMCollectionViewDataSet
-		indexPathForObject: function () {
-			// Unused because the cmd-tab controller never invalidates its data or layout
-		},
-		// @override - BMCollectionViewDataSet
-		contentsForCellWithReuseIdentifier: function (identifier) {
-			return $('<div class="BMCHCmdTabItem"></div>');
-		},
-		// @override - BMCollectionViewDataSet
-		cellForItemAtIndexPath: function (indexPath) {
-			var cell = this.collectionView.dequeueCellForReuseIdentifier('BMCHCmdTabItem');
-			this.updateCell(cell, {atIndexPath: indexPath});
-			return cell;
-		},
-		// @override - BMCollectionViewDataSet
-		updateCell: function (cell, args) {
-			$(cell.node).find('.BMCHCmdTabItem').text(args.atIndexPath.object.name);
-			
-			if (this.collectionView.isCellAtIndexPathSelected(args.atIndexPath)) {
-				$(cell.node).addClass('BMCHCmdTabItemSelected');
-			}
-			else {
-				$(cell.node).removeClass('BMCHCmdTabItemSelected');
-			}
-		},
-		// @override - BMCollectionViewDelegate
-		collectionViewDidSelectCellAtIndexPath: function (collectionView, indexPath) {
-			var cell = collectionView.cellAtIndexPath(indexPath, {ofType: BMCellAttributesType.Cell});
-			
-			if (cell) {
-				$(cell.node).addClass('BMCHCmdTabItemSelected');
-			}
-		},
-		// @override - BMCollectionViewDelegate
-		collectionViewDidDeselectCellAtIndexPath: function (collectionView, indexPath) {
-			var cell = collectionView.cellAtIndexPath(indexPath, {ofType: BMCellAttributesType.Cell});
-			
-			if (cell) {
-				$(cell.node).removeClass('BMCHCmdTabItemSelected');
-			}
-		},
-		// @override - BMCollectionViewDelegate
-		collectionViewCellWasClicked: function (collectionView, cell) {
-			collectionView.selectedIndexPaths = [cell.indexPath];
-			self.commitCmdTab();
-			
-			return YES;
-		},
-		// @override - BMWindowDelegate
-		windowDidClose: function (window) {
-			this.collectionView.release();
-			window.release();
-		},
-		// @override - BMWindowDelegate
-		windowShouldClose: function (window) {
-			return NO;
-		},
-		/**
-		 * Should be invoked to select the next code host in the list.
-		 * If the currently selected code host is the last one, this method will select the first code host.
-		 */
-		nextCodeHost: function () {
-			var indexPath = this.collectionView.selectedIndexPaths[0].copy();
-			
-			indexPath.row++;
-			
-			if (indexPath.row >= this.numberOfObjectsInSectionAtIndex(0)) {
-				indexPath.row = 0;
-			}
-			
-			indexPath.object = codeHosts[indexPath.row];
-			
-			this.collectionView.selectedIndexPaths = [indexPath];
-		},
-		/**
-		 * Should be invoked to select the previous code host in the list.
-		 * If the currently selected code host is the first one, this method will select the last code host.
-		 */
-		previousCodeHost: function () {
-			var indexPath = this.collectionView.selectedIndexPaths[0].copy();
-			
-			indexPath.row--;
-			
-			if (indexPath.row < 0) {
-				indexPath.row = this.numberOfObjectsInSectionAtIndex(0) - 1;
-			}
-			
-			indexPath.object = codeHosts[indexPath.row];
-			
-			this.collectionView.selectedIndexPaths = [indexPath];
-		}
-	};
-	
-	var cmdTabController; // <BMCHCmdTabController>
-	
-	/**
-	 * Constructs a cmd tab controller.
-	 * The controller will be assigned to the cmdTabController variable.
-	 */
-	this.initCmdTabController = function () {
-		cmdTabController = new BMCHCmdTabController();
-	};
-	
-	/**
-	 * Finds and constructs a list of available code hosts in the current mashup.
-	 * The code host list will be asigned to the codeHosts variable.
-	 */
-	this.initCodeHosts = function () {
-		var codeHostWidgets = [];
-		
-		function BMFindCodeHostsRecursive(container) {
-	
-			var widgets = container.widgets;
-			var length = widgets.length;
-			
-			for (var i = 0; i < length; i++) {
-				var widget = widgets[i];
-				
-				if (widget.properties.Type == 'BMCodeHost' || widget.properties.Type == 'BMCSSHost' || widget.properties.Type == 'BMTypescriptHost') codeHostWidgets.push(widget);
-				
-				var subWidgets = widget.widgets;
-				if (subWidgets.length > 0) {
-					BMFindCodeHostsRecursive(widget);
-				}
-				
-			}
-			
-		}
-		
-		function BMGetRootWidgetFromWidget(widget) {
-			var rootWidget = widget;
-			while (rootWidget) {
-				rootWidget = widget.parentWidget;
-				
-				widget = rootWidget || widget;
-			}
-			
-			return widget;
-		}
-		
-		BMFindCodeHostsRecursive(BMGetRootWidgetFromWidget(this));
-		
-		codeHosts = [];
-		
-		codeHostWidgets.forEach(function (widget) {
-			codeHosts.push({
-				name: widget.properties.Title + '.' + (widget.properties.Type == 'BMCodeHost' ? 'js' : 'css'),
-				widget: widget
-			});
-		});
-	};
-	
-	/**
-	 * Should be invoked to select the next code host.
-	 * If the list of available code hosts is not initialized when this method is invoked, it will be initialized before attempting to change the selection.
-	 * Similarly, if no cmd tab controller exists, one will be created.
-	 */
-	this.tabToNextCodeHost = function () {
-		if (!codeHosts) this.initCodeHosts();
-		if (!cmdTabController) {
-			this.initCmdTabController();
-		}
-		cmdTabController.nextCodeHost();
-	};
-	
-	
-	/**
-	 * Should be invoked to select the previous code host.
-	 * If the list of available code hosts is not initialized when this method is invoked, it will be initialized before attempting to change the selection.
-	 * Similarly, if no cmd tab controller exists, one will be created.
-	 */
-	this.tabToPreviousCodeHost = function () {
-		if (!codeHosts) this.initCodeHosts();
-		if (!cmdTabController) {
-			this.initCmdTabController();
-		}
-		cmdTabController.previousCodeHost();
-	};
-	
-	/**
-	 * Should be invoked to switch to the currently selected code host in the cmd tab controller.
-	 * If that code host is this instance, nothing happens.
-	 *
-	 * Invoking this method will cause the current cmd tab controller to be dismissed.
-	 */
-	this.commitCmdTab = function () {
-		this.isTabbing = NO;
-		
-		// Retrieve the code host instance corresponding to the current selection
-		var codeHost = cmdTabController.collectionView.selectedIndexPaths[0].object;
-		
-		if (codeHost.widget != this) {
-			// If it is different from this instance, dismiss this instance, then begin editing the selected one after the animation ends
-			codeWindow.dismissAnimated(YES, {toNode: this.jqElement[0], completionHandler: function () {
-				codeHost.widget.editScript();
-			}});
-		}
-		
-		cmdTabController.dismiss();
-		cmdTabController = undefined;
-		
-	};
 	
 /*
 ****************************************************************************************************************************************************************
@@ -2143,8 +1952,69 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	 * Should be invoked to update the stored serialized representation of user defined properties and update the widget model
 	 * to use the new properties.
 	 * This will remove all previous properties that are no longer defined. It will also remove all bindings to and from those properties.
+	 * @param initial <Boolean>		Should be set to `YES` when invoked from `afterLoad`.
 	 */
-	this.updateRuntimeProperties = function () {
+	this.updateRuntimeProperties = function (initial = NO) {
+		// In class mode, use the extracted class definition to build the properties, events and services
+		if (kind == 'class') {
+			if (!initial) {
+				// When loading the properties in afterLoad, the class definition won't be available yet
+				properties.length = 0;
+				services.length = 0;
+				events.length = 0;
+
+				// If class support isn't enabled, the class definition will not have a valid value
+				if (!supportsClass) return;
+			}
+
+			if (extractedClassDefinition && extractedClassDefinition.members) {
+				for (const member of extractedClassDefinition.members) {
+					switch (member.kind) {
+						case 'property':
+							let hasBindingAspect = NO;
+
+							const baseProperty = {
+								name: member.name,
+								dataType: member.baseType,
+								description: member.description,
+								type: member.kind
+							};
+
+							for (const aspect of member.aspects) {
+								switch (aspect.name) {
+									// The following aspects are IDE aspects which are ignored at runtime
+									case 'isBindingSource':
+									case 'isBindingTarget':
+									case 'dataShape':
+									case 'selectOptions':
+									case 'sourcePropertyName':
+									case 'baseTypeInfotableProperty':
+										baseProperty[aspect.name] = aspect.value;
+										break;
+									default:
+										// All other aspects are used at runtime only
+										break;
+								}
+							}
+
+							// If a binding aspect is specified, don't use the default behaviour of setting
+							// properties as both binding sources and targets
+							baseProperty.isBindingSource = baseProperty.isBindingSource || NO;
+							baseProperty.isBindingTarget = baseProperty.isBindingTarget || NO;
+
+							properties.push(baseProperty);
+							break;
+						case 'event':
+							events.push({name: member.name, description: member.description, type: member.kind});
+							break;
+						case 'service':
+							services.push({name: member.name, description: member.description, type: member.kind});
+							break;
+					}
+				}
+			}
+		}
+
 		// Build a flat array with all the properties so its easier to iterate
 		var runtimeProperties = properties.concat(services).concat(events);
 		
@@ -2157,8 +2027,11 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 		
 		var scriptIO = self.allWidgetProperties();
 
-		self.scriptServices = {
-		};
+		self.scriptServices = {};
+
+		self.scriptEvents = {};
+
+		self.scriptProperties = {};
 
 		// Remove the properties that no longer exist
 		if (previousProperties) {
@@ -2179,6 +2052,11 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 				
 				// The data shape is only used for infotables and actually handled later
 				var dataShape = runtimeProperties[i].dataShape;
+
+				const hasBindingAspect = 'isBindingTarget' in runtimeProperties[i] || 'isBindingSource' in runtimeProperties[i];
+
+				const isBindingTarget = hasBindingAspect ? runtimeProperties[i].isBindingTarget : YES;
+				const isBindingSource = hasBindingAspect ? runtimeProperties[i].isBindingSource : YES;
 				
 				// Build the definition for the current property
 				// All user-defined properties are both binding targets and sources
@@ -2191,9 +2069,19 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 					isVisible: true,
 					name: runtimeProperties[i].name,
 					type: "property",
-					isBindingTarget: true,
-					isBindingSource: true
+					isBindingTarget,
+					isBindingSource,
+					description: runtimeProperties[i].description || '',
+					selectOptions: runtimeProperties[i].selectOptions || undefined,
 				};
+
+				if (runtimeProperties[i].sourcePropertyName) {
+					propertyDefinition.sourcePropertyName = runtimeProperties[i].sourcePropertyName;
+				}
+
+				if (runtimeProperties[i].baseTypeInfotableProperty) {
+					propertyDefinition.baseTypeInfotableProperty = runtimeProperties[i].baseTypeInfotableProperty;
+				}
 				
 				if (dataShape) {
 					// If the data shape is defined, it may be in one of two forms:
@@ -2225,7 +2113,7 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 				}
 
 				scriptIO.properties[runtimeProperties[i].name] = propertyDefinition;
-
+				self.scriptProperties[runtimeProperties[i].name] = propertyDefinition;
 			}
 			// For services and events, the definition is much simpler and is identicial other than a differing type
 			else if (runtimeProperties[i].type == "event") {
@@ -2234,8 +2122,13 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 					isBaseProperty: false,
 					isVisible: true,
 					name: runtimeProperties[i].name,
-					type: "event"
+					type: "event",
+					description: runtimeProperties[i].description || '',
 				};
+
+				self.scriptEvents[runtimeProperties[i].name] = {
+					description: runtimeProperties[i].description || ''
+				}
 			}
 			else if (runtimeProperties[i].type == 'service') {
 
@@ -2243,16 +2136,23 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 					isBaseProperty: false,
 					isVisible: true,
 					name: runtimeProperties[i].name,
-					type: "service"
+					type: "service",
+					description: runtimeProperties[i].description || '',
 				};
 
-				self.scriptServices[runtimeProperties[i].name] = {};
+				self.scriptServices[runtimeProperties[i].name] = {
+					description: runtimeProperties[i].description || ''
+				};
 			}
 
 		}
 
 		// Inform the platform that properties were changed and it should update the property table
+		// TODO: Determine which of these two calls is actually needed
 		self.updatedProperties({updateUi: true});
+		if (this.jqElement) {
+			self.updateProperties();
+		}
 	};
 	
 	/**
@@ -2366,126 +2266,73 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	
 	var BaseDefinition; // <String>
 	if (YES) {
-		BaseDefinition = ["type STRING = string;",
-	            "interface LOCATION {",
-	            "   latitude: number;",
-	            "   longitude: number;",
-	            "   elevation?: number;",
-	            "   units?: string;",
-	            "}",
-	            "interface NOTHING extends Void{}",
-	            "type NUMBER = number;",
-	            "type INTEGER = number;",
-	            "type LONG = number;",
-	            "type BOOLEAN = boolean",
-	            "type DASHBOADNAME = string;",
-	            "type GROUPNAME = string;",
-	            "type GUID = string;",
-	            "type HTML = string;",
-	            "type HYPERLINK = string;",
-	            "type IMAGELINK = string;",
-	            "type MASHUPNAME = string;",
-	            "type MENUNAME = string;",
-	            "type PASSWORD = string;",
-	            "type TEXT = string;",
-	            "type THINGCODE = string;",
-	            "type THINGNAME = string;",
-	            "type USERNAME = string;",
-	            "type DATETIME = Date;",
-	            "interface XML {}",
-	            "type JSON = any;",
-	            "interface QUERY {",
-	            "   filters?:any;",
-	            "   sorts?:any;",
-	            "}",
-	            "interface TAGS {}",
-	            "interface SCHEDULE {}",
-	            "interface VARIANT {}",
-	            "type BLOB = Blob;",
-	            "type THINGSHAPENAME = string;",
-	            "type THINGTEMPLATENAME = string;",
-	            "type DATASHAPENAME = string;",
-	            "type PROJECTNAME = string;",
-	            "type BASETYPENAME = string;",
-	            "interface FieldDefinition {",
-	            "    ordinal?: number;",
-	            "    baseType: string;",
-	            "    name: string;",
-	            "    description?: string;",
-	            "}",
-	            "interface SortDefinition {",
-	            "    name: string;",
-	            "    ascending: boolean;",
-	            "}",
-	            "interface DataShape {",
-	            "    fieldDefinitions: FieldDefinition;",
-	            "} "].join('\n');
-	        
-	    BaseDefinition += '\
-	    	interface SelfDispatchPropertyUpdateToWidgetArgs {\
-	    		forProperty: string;\
-	    		value: any;\
-	    	}\
-	    	interface SelfShouldUpdateToValueArgs {\
-	    		fromValue: any;\
-	    	}\n\
-	    	interface TWWidget {\n\
-	    		/**\n\
-	    		 * Gets the value for the property with the given name.\n\
-	    		 * @param name - The property\'s name.\n\
-	    		 * @return - The property\'s value.\n\
-	    		 */\n\
-	    		getProperty(name: String): any;\n\
-	    		/**\n\
-	    		 * Sets the value for the property with the given name.\n\
-	    		 * @param name - The property\'s name.\n\
-	    		 * @param value - The property\'s value.\n\
-	    		 */\n\
-	    		setProperty(name: String, value: any?);\n\
-	    		/**\n\
-	    		 * Should be invoked by widgets when they modify the selection in an infotable property.\n\
-	    		 * This triggers the SelectedRowsChanged event and notifies all other widgets of the selection update.\n\
-	    		 * @param name - The property\'s name.\n\
-	    		 * @param selectedRowIndices - An array containing the infotable indices of the current selected rows.\n\
-	    		 */\n\
-	    		updateSelection(name: String, selectedRowIndices: Number[]);\n\
-	    		/**\n\
-	    		 * Invoked by the runtime before triggering updateProperty.\n\
-	    		 * @param updatePropertyInfo - An object containing the details of the property update.\n\
-	    		 */\n\
-	    		standardUpdateProperty(updatePropertyInfo: TWUpdatePropertyInfo);\n\
-	    		/**\n\
-	    		 * Invoked by the runtime to notify widgets that a bound property was updated.\n\
-	    		 * @param updatePropertyInfo - An object containing the details of the property update.\n\
-	    		 */\n\
-	    		updateProperty(updatePropertyInfo: TWUpdatePropertyInfo);\n\
-	    		/**\n\
-	    		 * Invoked by the runtime during mashup creation.\n\
-	    		 * Adds this widget\'s HTML content to the web page.\n\
-	    		 * @param ui - The jQuery element in which this widget should be added.\n\
-	    		 * @param masuhp - The mashup containing this widget.\n\
-	    		 */\n\
-	    		appendTo(ui: any, mashup: any);\n\
-	    	}\
-	    	/**\n\
-	    	 * Finds and returns the widget with the given name in the current mashup.\n\
-	    	 * @param name - The DisplayName of the widget to find.\n\
-	    	 * @return - The widget object if it was found, undefined otherwise.\n\
-	    	 */\n\
-	    	declare function $w<T extends TWRuntimeWidget>(name: string): T | undefined;\n\
-	    	/**\n\
-	    	 * Finds and returns the bounding box jQuery element of the widget with the given name in the current mashup.\n\
-	    	 * @param name - The DisplayName of the widget to find.\n\
-	    	 * @return - The bounding box if it was found, undefined otherwise.\n\
-	    	 */\n\
-	    	declare function $b(name: string): $ | undefined;\n\
-	    	/**\n\
-	    	 * Finds and returns the jQuery element of the widget with the given name in the current mashup.\n\
-	    	 * @param name - The DisplayName of the widget to find.\n\
-	    	 * @return - The jQuery element if it was found, undefined otherwise.\n\
-	    	 */\n\
-	    	declare function $j(name: string): $ | undefined;\n\
-	    ';
+		if (kind == 'object') {
+			BaseDefinition += '\
+				interface SelfDispatchPropertyUpdateToWidgetArgs {\
+					forProperty: string;\
+					value: any;\
+				}\
+				interface SelfShouldUpdateToValueArgs {\
+					fromValue: any;\
+				}\n\
+				interface TWWidget {\n\
+					/**\n\
+					 * Gets the value for the property with the given name.\n\
+					 * @param name - The property\'s name.\n\
+					 * @return - The property\'s value.\n\
+					 */\n\
+					getProperty(name: String): any;\n\
+					/**\n\
+					 * Sets the value for the property with the given name.\n\
+					 * @param name - The property\'s name.\n\
+					 * @param value - The property\'s value.\n\
+					 */\n\
+					setProperty(name: String, value: any?);\n\
+					/**\n\
+					 * Should be invoked by widgets when they modify the selection in an infotable property.\n\
+					 * This triggers the SelectedRowsChanged event and notifies all other widgets of the selection update.\n\
+					 * @param name - The property\'s name.\n\
+					 * @param selectedRowIndices - An array containing the infotable indices of the current selected rows.\n\
+					 */\n\
+					updateSelection(name: String, selectedRowIndices: Number[]);\n\
+					/**\n\
+					 * Invoked by the runtime before triggering updateProperty.\n\
+					 * @param updatePropertyInfo - An object containing the details of the property update.\n\
+					 */\n\
+					standardUpdateProperty(updatePropertyInfo: TWUpdatePropertyInfo);\n\
+					/**\n\
+					 * Invoked by the runtime to notify widgets that a bound property was updated.\n\
+					 * @param updatePropertyInfo - An object containing the details of the property update.\n\
+					 */\n\
+					updateProperty(updatePropertyInfo: TWUpdatePropertyInfo);\n\
+					/**\n\
+					 * Invoked by the runtime during mashup creation.\n\
+					 * Adds this widget\'s HTML content to the web page.\n\
+					 * @param ui - The jQuery element in which this widget should be added.\n\
+					 * @param masuhp - The mashup containing this widget.\n\
+					 */\n\
+					appendTo(ui: any, mashup: any);\n\
+				}\
+				/**\n\
+				 * Finds and returns the widget with the given name in the current mashup.\n\
+				 * @param name - The DisplayName of the widget to find.\n\
+				 * @return - The widget object if it was found, undefined otherwise.\n\
+				 */\n\
+				declare function $w<T extends TWRuntimeWidget>(name: string): T | undefined;\n\
+				/**\n\
+				 * Finds and returns the bounding box jQuery element of the widget with the given name in the current mashup.\n\
+				 * @param name - The DisplayName of the widget to find.\n\
+				 * @return - The bounding box if it was found, undefined otherwise.\n\
+				 */\n\
+				declare function $b(name: string): $ | undefined;\n\
+				/**\n\
+				 * Finds and returns the jQuery element of the widget with the given name in the current mashup.\n\
+				 * @param name - The DisplayName of the widget to find.\n\
+				 * @return - The jQuery element if it was found, undefined otherwise.\n\
+				 */\n\
+				declare function $j(name: string): $ | undefined;\n\
+			';
+		}
 	};
 	
 	/**
@@ -2513,6 +2360,18 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 	 * The current code editor must support extensible autocomplete definitions, otherwise this method's behaviour will be undefined.
 	 */
 	this.buildAutocompleteDefinition = function () {
+		if (kind == 'object') {
+			this.buildObjectAutocompleteDefinition();
+		}
+		else {
+			this.buildClassAutocompleteDefinition();
+		}
+	};
+
+	/**
+	 * Builds the autocomplete definitions for objects.
+	 */
+	this.buildObjectAutocompleteDefinition = function () {
 		// Always include the base definition
 		var definition = BaseDefinition + 'interface Self extends TWRuntimeWidget {';
 		var exportDefinition = 'interface ' + self.getProperty('Title') + ' extends TWRuntimeWidget {';
@@ -2605,7 +2464,35 @@ TW.IDE.Widgets.BMCodeHost = function (language) {
 
 		// Asign the definition to the export property
 		self.setProperty('Exports', exportDefinition);
-	};
+	}
+
+	/**
+	 * Builds the autocomplete definitions for classes.
+	 */
+	this.buildClassAutocompleteDefinition = function () {
+		// In class mode, most autocomplete definitions are handled by typescript
+		let widgetNames = '';
+		const rootWidget = this.jqElement.closest('#mashup-root').data('widget');
+
+		widgetNames += JSON.stringify(rootWidget.getProperty('DisplayName'));
+
+		// Collect the widget display names to make it possible to type check the `getWidget` method
+		/** @type {Object[]} */
+		let widgets = rootWidget.widgets.slice();
+		while (widgets.length) {
+			const widget = widgets.pop();
+			widgetNames += ' | ' + JSON.stringify(widget.getProperty('DisplayName'));
+			widgets = widgets.concat(widget.widgets);
+		}
+
+		definition = BaseDefinition + '\ntype TWLocalDisplayName = ' + widgetNames;
+		
+		// Asign the definition to the code editor's scope
+		codeEditor.scope = definition;
+
+		// Asign the definition to the export property
+		self.setProperty('Exports', codeEditor.code);
+	}
 	
 	/**
 	 * Should be invoked to insert the code corresponding to the property at the given index path to the code editor.
@@ -2941,10 +2828,9 @@ TW.IDE.Widgets.BMCSSHost = function () {
     };
 }
 
-
-TW.IDE.Widgets.BMTypescriptHost = function () {
+TW.IDE.Widgets.BMTypescriptHost = function (kind) {
 	// The Typescript host is mostly identical to the Javascript host so it reuses most of its code.
-	TW.IDE.Widgets.BMCodeHost.call(this, BMCodeEditorLanguage.Typescript);
+	TW.IDE.Widgets.BMCodeHost.call(this, BMCodeEditorLanguage.Typescript, kind);
 
 
 	/**
@@ -2963,6 +2849,35 @@ TW.IDE.Widgets.BMTypescriptHost = function () {
         var html = '<div class="widget-content BMCodeHost">\
         				<div class="BMCodeHostContainer">\
 							<div class="BMCHTypescriptIcon"></div>\
+							<div class="InlineBlock BMCHScriptEdit" >' + this.getProperty("Title") + '.ts</div>\
+						</div>\
+					</div>';
+
+        return html;
+    };
+}
+
+TW.IDE.Widgets.BMTypescriptClassHost = function () {
+	// The Typescript class host is mostly identical to the Typescript host so it reuses most of its code.
+	TW.IDE.Widgets.BMTypescriptHost.call(this, 'class');
+
+
+	/**
+	 * Invoked by the platform to retrieve the path to the widget's icon as it appears in the widgets list.
+	 * @return <String>			The icon path.
+	 */
+	this.widgetIconUrl = function () {
+    	return  "../Common/extensions/BMCodeHost/ui/BMCodeHost/images/TypeScriptClass@2x.png";
+	}
+
+	/**
+	 * Invoked by the runtime when the widget has to be rendered. This function should provide the HTML contents of this widget.
+	 * @return <String>				The widget's content as an HTML string.
+	 */
+    this.renderHtml = function () {
+        var html = '<div class="widget-content BMCodeHost">\
+        				<div class="BMCodeHostContainer">\
+							<div class="BMCHTypescriptClassIcon"></div>\
 							<div class="InlineBlock BMCHScriptEdit" >' + this.getProperty("Title") + '.ts</div>\
 						</div>\
 					</div>';
