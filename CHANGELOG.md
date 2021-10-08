@@ -1,3 +1,9 @@
+# 2.7.1
+
+Resolves an issue that caused importing other code hosts to cause an error ([stefan-lacatus](https://github.com/stefan-lacatus))
+
+Resolves an issue that caused typescript classes to not appear correctly in the browser's sources tab.
+
 # 2.7
 
 Re-enables the use of the "Bindings", "View Mashup" and "Save" buttons in Thingworx 9.1 and newer. When using the "Bindings" button, all code windows will minimize.
