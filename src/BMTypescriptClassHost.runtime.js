@@ -45,7 +45,7 @@ export {property, event, service, canBind, didBind, twevent};
 
 
 TW.Runtime.Widgets.BMTypescriptClassHost = function () {
-    eval(this.getProperty('TranspiledCode' + "\n//# sourceURL=" + this.getProperty("Title") + ".ts"));
+    eval(this.getProperty('TranspiledCode') + "\n//# sourceURL=" + this.getProperty("Title") + ".ts");
 
     if (currentWidget) {
         const widget = currentWidget;
