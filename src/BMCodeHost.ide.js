@@ -604,7 +604,7 @@ class MyClass extends TypescriptWidget {
 	 * @param targetArray <[Object]>		An array to which the exportable widgets will be added.
 	 */
 	function findExportsInWidget(rootWidget, targetArray) {
-		if (rootWidget.Properties.Type == 'BMCodeHost' || rootWidget.Properties.Type == 'BMTypescriptHost' || rootWidget.properties.Type == 'BMTypescriptClassHost') {
+		if (rootWidget.Properties.Type == 'BMCodeHost' || rootWidget.Properties.Type == 'BMTypescriptHost' || rootWidget.Properties.Type == 'BMTypescriptClassHost') {
 			targetArray.push({
 				title: rootWidget.Properties.Title,
 				exports: rootWidget.Properties.Exports,
