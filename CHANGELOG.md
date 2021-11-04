@@ -1,3 +1,7 @@
+# 2.8
+
+Minor style updates.
+
 # 2.7.1
 
 Resolves an issue that caused importing other code hosts to cause an error ([stefan-lacatus](https://github.com/stefan-lacatus))
