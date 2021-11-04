@@ -117,8 +117,16 @@
 	padding-right: 8px;
 }
 
+.BMCHScriptEditReadonly {
+	border: none;
+}
+
 .BMCHScriptEdit:hover {
 	background: rgba(0, 0, 0, .2);
+}
+
+.BMCHScriptEditReadonly:hover {
+	background: none;
 }
 
 .CHHeader {
