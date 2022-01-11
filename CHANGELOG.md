@@ -1,3 +1,7 @@
+# 2.8.3
+
+Resolves an issue that could cause an error to appear in the browser console.
+
 # 2.8
 
 Minor style updates.
