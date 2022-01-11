@@ -2151,7 +2151,7 @@ class MyClass extends TypescriptWidget {
 		// TODO: Determine which of these two calls is actually needed
 		self.updatedProperties({updateUi: true});
 		if (this.jqElement) {
-			self.updateProperties();
+			self.updateProperties({updateUi: true});
 		}
 	};
 	
