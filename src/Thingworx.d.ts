@@ -2101,7 +2101,7 @@ declare interface JSONInfoTable<T> {
 
 type NOTHING = void;
 type STRING = string;
-type NUMBER = string;
+type NUMBER = number;
 type BOOLEAN = boolean;
 
 type ANYSCALAR = unknown;
