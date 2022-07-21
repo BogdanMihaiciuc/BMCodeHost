@@ -2095,7 +2095,7 @@ declare interface FieldDefinitionBase<key extends string, T = any> extends Field
 declare interface JSONInfoTable<T> {
     rows: T[];
     dataShape: {
-        fieldDefinitions: {[key in keyof T]: FieldDefinitionBase<key, T[key]>}
+        fieldDefinitions: {[key in keyof T]: key extends string ? FieldDefinitionBase<key, T[key]> : never}
     }
 }
 
@@ -2177,7 +2177,7 @@ type THINGNAME<Template extends string | undefined = undefined, Shape extends st
  * A subclass of `TWRuntimeWidgets` that provides support for widget classes that can be defined using
  * the `BMCodeHost` extensions.
  */
- declare class TypescriptWidget extends TWRuntimeWidget {
+ declare abstract class TypescriptWidget extends TWRuntimeWidget {
     renderHtml(): string;
     afterRender(): void;
 
