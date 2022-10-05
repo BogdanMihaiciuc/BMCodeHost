@@ -1,4 +1,4 @@
-# 2.8.5
+# 2.9
 
 Resolves an issue where the `NUMBER` base type was declared as `string` instead of `number`.
 
