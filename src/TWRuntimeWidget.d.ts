@@ -27,12 +27,12 @@ declare class TWRuntimePropertyAspect {
 /**
  * An aspect that makes the property it's applied to a binding source at design time.
  */
-const bindingSource: TWRuntimePropertyAspect;
+declare const bindingSource: TWRuntimePropertyAspect;
 
 /**
  * An aspect that makes the property it's applied to a binding target at design time.
  */
-const bindingTarget: TWRuntimePropertyAspect;
+declare const bindingTarget: TWRuntimePropertyAspect;
 
 /**
  * Constructs and returns a property aspect that can be used to 
@@ -46,7 +46,7 @@ const bindingTarget: TWRuntimePropertyAspect;
  * @param {string} name         The name of the method that will handle this.
  * @return {TWPropertyAspect}   A property aspect.
  */
-function canBind(name: string): TWRuntimePropertyAspect;
+declare function canBind(name: string): TWRuntimePropertyAspect;
 
 /**
  * Constructs and returns a property aspect that can be used to 
@@ -63,7 +63,7 @@ function canBind(name: string): TWRuntimePropertyAspect;
  * @param {string} name         The name of the method that will handle this.
  * @return {TWPropertyAspect}   A property aspect.
  */
-function didBind(name: string): TWRuntimePropertyAspect;
+declare function didBind(name: string): TWRuntimePropertyAspect;
 
 /**
  * Constructs and returns a property aspect that specifies what infotable the widget
@@ -72,7 +72,7 @@ function didBind(name: string): TWRuntimePropertyAspect;
  * @param {string} name                         The name of the infotable property.
  * @return {TWSourceInfotablePropertyAspect}    A property aspect.
  */
-function sourcePropertyName(name: string): TWRuntimePropertyAspect;
+declare function sourcePropertyName(name: string): TWRuntimePropertyAspect;
 
 /**
  * Constructs and returns a property aspect that specifies what infotable
@@ -81,37 +81,37 @@ function sourcePropertyName(name: string): TWRuntimePropertyAspect;
  * @param {string} name         The name of the infotable property.
  * @return {TWPropertyAspect}   A property aspect.
  */
-function baseTypeInfotableProperty(name: string): TWRuntimePropertyAspect;
+declare function baseTypeInfotableProperty(name: string): TWRuntimePropertyAspect;
 
 /**
  * Returns a decorator that binds the class member it is applied to to a property definition.
  * @param  {...TWRuntimePropertyAspect} args        An optional list of property aspects to apply to this property.
  * @return {any}                                    A decorator.
  */
-function property(...args: TWRuntimePropertyAspect[]): <T extends TWRuntimeWidget, K extends NonMethod<T>, V>(target: T, key: K, descriptor?: V extends (...args: any[]) => any ? never : V) => void;
+declare function property(...args: TWRuntimePropertyAspect[]): <T extends TWRuntimeWidget, K extends NonMethod<T>, V>(target: T, key: K, descriptor?: V extends (...args: any[]) => any ? never : V) => void;
 
 /**
  * Binds the class member it is applied to to the a property.
  */
-function property<T extends TWRuntimeWidget, K extends NonMethod<T>, V>(target: T, key: K, descriptor?: V extends (...args: any[]) => any ? never : V): void;
+declare function property<T extends TWRuntimeWidget, K extends NonMethod<T>, V>(target: T, key: K, descriptor?: V extends (...args: any[]) => any ? never : V): void;
 
 /**
  * A decorator that binds the given property to the service with the same name as the method.
  */
-function service<T extends TWRuntimeWidget, K extends keyof T, F extends T[K]>(target: T, key: CompatibleKeys<T, (...args: any[]) => any>, descriptor?: TypedPropertyDescriptor<(...args: any[]) => any>): void;
+declare function service<T extends TWRuntimeWidget, K extends keyof T, F extends T[K]>(target: T, key: CompatibleKeys<T, (...args: any[]) => any>, descriptor?: TypedPropertyDescriptor<(...args: any[]) => any>): void;
 
 /**
  * A decorator that marks the given property as an event.
  */
-const event: <T extends TWRuntimeWidget, K extends keyof T, F extends T[K]>(target: T, key: CompatibleKeys<T, TWEvent>, descriptor?: TypedPropertyDescriptor<TWEvent>) => void;
+declare const event: <T extends TWRuntimeWidget, K extends keyof T, F extends T[K]>(target: T, key: CompatibleKeys<T, TWEvent>, descriptor?: TypedPropertyDescriptor<TWEvent>) => void;
 
 /**
  * A decorator that marks the given property as an event.
  */
-const twevent: <T extends TWRuntimeWidget, K extends keyof T, F extends T[K]>(target: T, key: CompatibleKeys<T, TWEvent>, descriptor?: TypedPropertyDescriptor<TWEvent>) => void;
+declare const twevent: <T extends TWRuntimeWidget, K extends keyof T, F extends T[K]>(target: T, key: CompatibleKeys<T, TWEvent>, descriptor?: TypedPropertyDescriptor<TWEvent>) => void;
 
 /**
 * A decorator that makes a given widget class available to Thingworx.
 * @param widget     The widget the decorator is applied to.
 */
-function TWWidgetDefinition<T extends new(...args: {}[]) => TWRuntimeWidget>(widget: T): void;
+declare function TWWidgetDefinition<T extends new(...args: {}[]) => TWRuntimeWidget>(widget: T): void;

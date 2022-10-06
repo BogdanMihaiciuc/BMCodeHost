@@ -1,3 +1,11 @@
+# 2.9
+
+Resolves an issue where the `NUMBER` base type was declared as `string` instead of `number`.
+
+## Typescript Class
+
+When a significant number of properties are deleted, a confirmation window will be displayed with an option to retain the bindings for those properties. When these bindings are retained, they must be removed one by one from the composer if any aren't needed anymore.
+
 # 2.8.3
 
 Resolves an issue that could cause an error to appear in the browser console.

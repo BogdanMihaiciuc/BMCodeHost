@@ -2033,6 +2033,9 @@ class MyClass extends TypescriptWidget {
 
 		self.scriptProperties = {};
 
+		// An array used to keep track of the properties whose bindings should be removed.
+		const propertiesToUnbind = [];
+
 		// Remove the properties that no longer exist
 		if (previousProperties) {
 			for (var i = 0; i < previousProperties.length; i++) {
@@ -2040,11 +2043,12 @@ class MyClass extends TypescriptWidget {
 					self.removeProperty(previousProperties[i].name);
 
 					// Remove any bindings to and from this property
-					this.removeBindingsFromPropertyAsTarget(previousProperties[i].name);
-					this.removeBindingsFromPropertyAsSource(previousProperties[i].name);
+					propertiesToUnbind.push(previousProperties[i].name);
 				}
 			}
 		}
+
+		self.unbindProperties(propertiesToUnbind, {previousProperties});
 
 		// Add all new properties
 		for (var i = 0; i < runtimeProperties.length; i++) {
@@ -2154,6 +2158,43 @@ class MyClass extends TypescriptWidget {
 			self.updateProperties({updateUi: true});
 		}
 	};
+
+	/**
+	 * Removes any the bindings to and from the given properties.
+	 * @param propertiesToUnbind <[String]>				An array containing the property names to remove.
+	 * @param previousProperties <[Object], nullable> 	If specified, an array containing the previous properties
+	 * 													from which the bindings are removed. This is used to determine whether
+	 * 													a warning should be shown to the user.
+	 */
+	this.unbindProperties = async function (propertiesToUnbind, {previousProperties}) {
+		if (!propertiesToUnbind.length) return;
+
+		if (propertiesToUnbind.length >= previousProperties.length) {
+			// If all previous properties or more are removed, display a warning to the user
+			// listing out all the bindings that are about to be removed
+			let text = 'Bindings related to the following properties will be removed. This action cannot be undone:<br/><br/>';
+			for (const property of propertiesToUnbind) {
+				text += ' &bull; <code>' + property + '</code><br/>';
+			}
+
+			const confirmationController = BMConfirmationPopup.confirmationPopupWithTitle('Remove bindings', {
+				text: '',
+				negativeActionText: 'Don\'t Remove',
+				positiveActionText: 'Remove Bindings'
+			});
+
+			// Set the text as HTML to retain formatting
+			confirmationController.HTML = text;
+
+			const result = confirmationController.confirm();
+			if (result != BMConfirmationPopupResult.Confirmed) return;
+		}
+
+		for (const property of propertiesToUnbind) {
+			this.removeBindingsFromPropertyAsTarget(property);
+			this.removeBindingsFromPropertyAsSource(property);
+		}
+	}
 	
 	/**
 	 * Should be invoked when the base type of a property is changed through the editor.
