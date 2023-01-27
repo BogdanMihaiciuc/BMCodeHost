@@ -2,7 +2,7 @@
     "name": "bm-code-host",
     "packageName": "BMCodeHost",
     "moduleName": "BMCodeHost",
-    "version": "2.9.0",
+    "version": "2.9.2",
     "description": "Allows customizing mashups using CSS and JavaScript code.",
     "thingworxServer": "http://localhost",
     "thingworxUser": "Administrator",
@@ -56,6 +56,6 @@
         "xml2js": "^0.4.19"
     },
     "dependencies": {
-        "typescriptwebpacksupport": "^2.0.9"
+        "typescriptwebpacksupport": "^2.2.1"
     }
 }

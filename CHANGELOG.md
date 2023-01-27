@@ -1,3 +1,7 @@
+# 2.9.2
+
+Rebuilt with the latest version of `typescriptwebpacksupport`, which addresses an issue where property values were incorrectly converted to strings instead of the appropriate base types.
+
 # 2.9
 
 Resolves an issue where the `NUMBER` base type was declared as `string` instead of `number`.
